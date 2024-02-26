@@ -37,5 +37,13 @@ namespace Motrum.Wpf.Services
         /// </summary>
         /// <param name="obj">Сериализуемый обьект</param>
         public void Serialize(T obj) => File.WriteAllText(FilePath, JsonConvert.SerializeObject(obj, Formatting.Indented));
+
+        /// <summary>
+        /// Создает путь к файлу базового каталога
+        /// </summary>
+        /// <param name="fileName">Имя файла</param>
+        /// <returns>Путь к файлу</returns>
+        public static string CreateBaseFilePath(string fileName) =>
+            Path.Combine(AppContext.BaseDirectory, fileName);
     }
 }
