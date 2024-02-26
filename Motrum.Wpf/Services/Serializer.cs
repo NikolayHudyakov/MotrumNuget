@@ -14,7 +14,7 @@ namespace Motrum.Wpf.Services
         /// <summary>
         /// Путь к файлу
         /// </summary>
-        protected virtual string FilePath => throw new NotImplementedException();
+        protected abstract string FilePath { get; }
 
         /// <summary>
         /// Десериализованный обьект
