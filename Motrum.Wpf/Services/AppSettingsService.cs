@@ -10,6 +10,14 @@
         /// <summary>
         /// Путь к файлу настроек
         /// </summary>
-        protected override string FilePath => Path.Combine(AppContext.BaseDirectory, FileName);
+        protected override string FilePath => CreateBaseFilePath(FileName);
+
+        /// <summary>
+        /// Создает путь к файлу базового каталога
+        /// </summary>
+        /// <param name="fileName">Имя файла</param>
+        /// <returns>Путь к файлу</returns>
+        public static string CreateBaseFilePath(string fileName) => 
+            Path.Combine(AppContext.BaseDirectory, fileName);
     }
 }
