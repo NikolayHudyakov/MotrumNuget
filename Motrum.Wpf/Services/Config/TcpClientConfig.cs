@@ -8,7 +8,7 @@
         /// <summary>
         /// IP адрес
         /// </summary>
-        public string IPAddress { get; set; } = string.Empty;
+        public string? IPAddress { get; set; }
 
         /// <summary>
         /// Порт
