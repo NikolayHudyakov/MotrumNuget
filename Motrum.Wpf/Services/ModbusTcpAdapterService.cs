@@ -27,7 +27,7 @@ namespace Motrum.Wpf.Services
         private Task? _writeMultipleDoTask;
         private Task? _writeSingleDoTask;
         private bool _connected;
-        private int _currentCoils;
+        private int _numberOfCoils;
 
         /// <summary>
         /// Настройки сервиса
@@ -144,7 +144,7 @@ namespace Motrum.Wpf.Services
                 _connectionStatusThread = new Thread(ConnectionStatusCycle);
                 _connectionStatusThread.Start();
 
-                _currentCoils = GetCountDo();
+                _numberOfCoils = GetCountDo();
 
                 _readDiThread = new Thread(ReadDiCycle);
                 _readDiThread.Start();
@@ -166,7 +166,7 @@ namespace Motrum.Wpf.Services
                 _readDiThread?.Join();
                 _readEncoderThread?.Join();
 
-                WriteMultipleDoAsync(StartAddressDo, new bool[_currentCoils]).Wait();
+                WriteMultipleDoAsync(StartAddressDo, new bool[_numberOfCoils]).Wait();
 
                 _tcpClient?.Close();
 
