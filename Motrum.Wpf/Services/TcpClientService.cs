@@ -69,12 +69,12 @@ namespace Motrum.Wpf.Services
         /// <returns>Задача представляющая асинхронную отправку данных на TCP сервер</returns>
         public async Task SendDataAsync(string data)
         {
-            if (Config == null || !_connected)
+            if (Config == null || !_connected || _networkStream == null)
                 return;
 
             try
             {
-                await _networkStream?.WriteAsync(Encoding.UTF8.GetBytes(data)).AsTask()!;
+                await _networkStream.WriteAsync(Encoding.UTF8.GetBytes(data)).AsTask();
             }
             catch (Exception ex)
             {
@@ -121,7 +121,7 @@ namespace Motrum.Wpf.Services
                     continue;
                 }
 
-                if (_connected = GetConnected())
+                if (_connected = GetConnectionStatus())
                 {
                     Status?.Invoke(true);
                     Thread.Sleep(ConnStatusTimeout);
@@ -129,17 +129,18 @@ namespace Motrum.Wpf.Services
                 }
 
                 Status?.Invoke(false);
+
+                _tcpClient?.Close();
                 _tcpClient = new TcpClient();
 
                 try
                 {
-                    _tcpClient.Connect(Config.IPAddress!, Config.Port);
+                    _tcpClient.Connect(Config.IPAddress, Config.Port);
                     _networkStream = _tcpClient.GetStream();
                 }
                 catch (Exception ex)
                 {
                     Error?.Invoke(ex.Message);
-                    _tcpClient?.Close();
                     Thread.Sleep(ErrorTimeout);
                 }
             }
@@ -151,38 +152,37 @@ namespace Motrum.Wpf.Services
 
             while (_startStopFlag)
             {
-                if (Config == null || !_connected)
+                if (Config == null || !_connected || _tcpClient == null || _networkStream == null)
                 {
                     Thread.Sleep(ErrorTimeout);
                     continue;
                 }
 
-                data ??= new byte[_tcpClient!.ReceiveBufferSize];
+                data ??= new byte[_tcpClient.ReceiveBufferSize];
                 try
                 {
-                    int bytesCount = _networkStream!.Read(data, 0, data.Length);
+                    int bytesCount = _networkStream.Read(data, 0, data.Length);
 
                     DataReceive?.Invoke(Encoding.UTF8.GetString(data, 0, bytesCount));
                 }
                 catch (Exception ex)
                 {
-                    if (_startStopFlag)
-                        Error?.Invoke(ex.Message);
+                    Error?.Invoke(ex.Message);
                     Thread.Sleep(ErrorTimeout);
                 }
-
             }
         }
 
-        private bool GetConnected()
+        private bool GetConnectionStatus()
         {
-            if (Config == null) return false;
+            if (Config == null) 
+                return false;
 
             using Ping ping = new();
             try
             {
                 return ping.Send(Config.IPAddress, PingTimeout).Status == IPStatus.Success &&
-                    _tcpClient != null && _tcpClient!.Connected;
+                    _tcpClient != null && _tcpClient.Connected;
             }
             catch
             {

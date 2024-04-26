@@ -8,7 +8,7 @@
         /// <summary>
         /// Имя порта
         /// </summary>
-        public string? PortName { get; set; }
+        public string PortName { get; set; } = string.Empty;
 
         /// <summary>
         /// Скорость

@@ -31,13 +31,13 @@ namespace Motrum.Wpf.Services.Intefaces
         /// <param name="leadingEdgeInputs">Передний фронт</param>
         /// <param name="trailingEdgeInputs">Задний фронт</param>
         /// <param name="timeMillisecond">Время чтения дискретных входов</param>
-        public delegate void ReadDIEventHendler(bool[] leadingEdgeInputs, bool[] trailingEdgeInputs, double timeMillisecond);
+        public delegate void ReadDiEventHendler(bool[] leadingEdgeInputs, bool[] trailingEdgeInputs, double timeMillisecond);
 
         /// <summary>
         /// Возникает при появлении переднего или заднего
         /// фронта на любом из дискретных входов определенных в <see cref="Config"/>
         /// </summary>
-        public event ReadDIEventHendler? ReadDI;
+        public event ReadDiEventHendler? ReadDi;
 
         /// <summary>
         /// Инкапсулирует метод, который обрабатывает данные считанные с модуля энкодера
@@ -80,7 +80,7 @@ namespace Motrum.Wpf.Services.Intefaces
         /// Задача представляющая асинхронную запись,
         /// результатом которой является время потраченое на запись в микросекундах
         /// </returns>
-        public Task<double> WriteSingleDOAsync(ushort coilAddress, bool value);
+        public Task<double> WriteSingleDoAsync(ushort coilAddress, bool value);
 
         /// <summary>
         /// Асинхронно записывает значения последовательности дискретных выходов
@@ -91,6 +91,6 @@ namespace Motrum.Wpf.Services.Intefaces
         /// Задача представляющая асинхронную запись,
         /// результатом которой является время потраченое на запись в микросекундах
         /// </returns>
-        public Task<double> WriteMultipleDOAsync(ushort startAddress, bool[] data);
+        public Task<double> WriteMultipleDoAsync(ushort startAddress, bool[] data);
     }
 }

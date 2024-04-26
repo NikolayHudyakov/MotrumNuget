@@ -18,12 +18,12 @@ namespace Motrum.Wpf.Services
 
         private bool _startStopFlag;
         private Thread? _connectionStatusThread;
-        private Thread? _readDIThread;
+        private Thread? _readDiThread;
         private Thread? _readEncoderThread;
         private TcpClient? _tcpClient;
         private IModbusMaster? _modbusMaster;
-        private Task<double>? _writeMultipleDOTask;
-        private Task<double>? _writeSingleDOTask;
+        private Task? _writeMultipleDoTask;
+        private Task? _writeSingleDoTask;
         private bool _connected;
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace Motrum.Wpf.Services
         /// Возникает при появлении переднего или заднего
         /// фронта на любом из дискретных входов определенных в <see cref="Config"/>
         /// </summary>
-        public event ReadDIEventHendler? ReadDI;
+        public event ReadDiEventHendler? ReadDi;
 
         /// <summary>
         /// Возникает с периодичностью указанной в <see cref="Config"/> 
@@ -87,8 +87,23 @@ namespace Motrum.Wpf.Services
         /// Задача представляющая асинхронную запись,
         /// результатом которой является время потраченое на запись в микросекундах
         /// </returns>
-        public async Task<double> WriteSingleDOAsync(ushort coilAddress, bool value) =>
-            await (_writeSingleDOTask = _WriteSingleDOAsync(coilAddress, value));
+        public async Task<double> WriteSingleDoAsync(ushort coilAddress, bool value)
+        {
+            if (Config == null || !_connected || _modbusMaster == null)
+                return 0;
+
+            try
+            {
+                var dateTime = DateTime.Now;
+                await (_writeSingleDoTask = _modbusMaster.WriteSingleCoilAsync(Config.SlaveAddress, coilAddress, value));
+                return (DateTime.Now - dateTime).TotalMicroseconds;
+            }
+            catch (Exception ex)
+            {
+                Error?.Invoke(ex.Message);
+                return 0;
+            }
+        }
 
         /// <summary>
         /// Асинхронно записывает значения последовательности дискретных выходов
@@ -99,8 +114,23 @@ namespace Motrum.Wpf.Services
         /// Задача представляющая асинхронную запись,
         /// результатом которой является время потраченое на запись в микросекундах
         /// </returns>
-        public async Task<double> WriteMultipleDOAsync(ushort startAddress, bool[] data) =>
-            await (_writeMultipleDOTask = _WriteMultipleDOAsync(startAddress, data));
+        public async Task<double> WriteMultipleDoAsync(ushort startAddress, bool[] data)
+        {
+            if (Config == null || !_connected || _modbusMaster == null)
+                return 0;
+
+            try
+            {
+                var dateTime = DateTime.Now;
+                await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(Config.SlaveAddress, startAddress, data));
+                return (DateTime.Now - dateTime).TotalMicroseconds;
+            }
+            catch (Exception ex)
+            {
+                Error?.Invoke(ex.Message);
+                return 0;
+            }
+        }
 
         private void Start()
         {
@@ -111,8 +141,8 @@ namespace Motrum.Wpf.Services
                 _connectionStatusThread = new Thread(ConnectionStatusCycle);
                 _connectionStatusThread.Start();
 
-                _readDIThread = new Thread(ReadDICycle);
-                _readDIThread.Start();
+                _readDiThread = new Thread(ReadDiCycle);
+                _readDiThread.Start();
 
                 _readEncoderThread = new Thread(ReadEncoderCycle);
                 _readEncoderThread.Start();
@@ -125,13 +155,13 @@ namespace Motrum.Wpf.Services
             {
                 _startStopFlag = false;
 
-                _writeSingleDOTask?.Wait();
-                _writeMultipleDOTask?.Wait();
+                _writeSingleDoTask?.Wait();
+                _writeMultipleDoTask?.Wait();
                 _connectionStatusThread?.Join();
-                _readDIThread?.Join();
+                _readDiThread?.Join();
                 _readEncoderThread?.Join();
 
-                _WriteMultipleDOAsync(startAddressDo, new bool[countDo]).Wait();
+                WriteMultipleDoAsync(startAddressDo, new bool[countDo]).Wait();
 
                 _tcpClient?.Close();
 
@@ -150,7 +180,7 @@ namespace Motrum.Wpf.Services
                     continue;
                 }
 
-                if (_connected = TcpClientConnected())
+                if (_connected = GetConnectionStatus())
                 {
                     Status?.Invoke(true);
                     Thread.Sleep(ConnStatusTimeout);
@@ -158,7 +188,10 @@ namespace Motrum.Wpf.Services
                 }
 
                 Status?.Invoke(false);
+
+                _tcpClient?.Close();
                 _tcpClient = new TcpClient();
+
                 try
                 {
                     _tcpClient.Connect(Config.IPAddress, Config.Port);
@@ -167,54 +200,53 @@ namespace Motrum.Wpf.Services
                 catch (Exception ex)
                 {
                     Error?.Invoke(ex.Message);
-                    _tcpClient?.Close();
                     Thread.Sleep(ErrorTimeout);
                 }
             }
         }
 
-        private void ReadDICycle()
+        private void ReadDiCycle()
         {
             var changeFlag = false;
             DateTime dateTime;
-            bool[]? _previousInputs = null;
-            bool[]? _leadingEdgeInputs = null;
-            bool[]? _trailingEdgeInputs = null;
-            bool[]? inputs;
+            bool[]? previousInputs = null;
+            bool[]? leadingEdgeInputs = null;
+            bool[]? trailingEdgeInputs = null;
+            bool[] inputs;
 
             while (_startStopFlag)
             {
-                if (Config == null || !_connected || Config.DINumberOfPoints == 0)
+                if (Config == null || !_connected || Config.DINumberOfPoints == 0 || _modbusMaster == null)
                 {
                     Thread.Sleep(ErrorTimeout);
                     continue;
                 }
 
                 dateTime = DateTime.Now;
-                _previousInputs ??= new bool[Config.DINumberOfPoints];
-                _leadingEdgeInputs ??= new bool[Config.DINumberOfPoints];
-                _trailingEdgeInputs ??= new bool[Config.DINumberOfPoints];
+                previousInputs ??= new bool[Config.DINumberOfPoints];
+                leadingEdgeInputs ??= new bool[Config.DINumberOfPoints];
+                trailingEdgeInputs ??= new bool[Config.DINumberOfPoints];
                 try
                 {
-                    inputs = _modbusMaster?.ReadInputs(Config.SlaveAddress, Config.DIStartAddress, Config.DINumberOfPoints);
+                    inputs = _modbusMaster.ReadInputs(Config.SlaveAddress, Config.DIStartAddress, Config.DINumberOfPoints);
 
                     for (int i = 0; i < Config.DINumberOfPoints; i++)
                     {
-                        _leadingEdgeInputs[i] = false;
-                        _trailingEdgeInputs[i] = false;
-                        if (inputs![i] != _previousInputs[i])
+                        leadingEdgeInputs[i] = false;
+                        trailingEdgeInputs[i] = false;
+                        if (inputs![i] != previousInputs[i])
                         {
                             if (inputs![i])
-                                _leadingEdgeInputs[i] = true;
+                                leadingEdgeInputs[i] = true;
                             else
-                                _trailingEdgeInputs[i] = true;
+                                trailingEdgeInputs[i] = true;
                             changeFlag = true;
                         }
-                        _previousInputs[i] = inputs![i];
+                        previousInputs[i] = inputs![i];
                     }
                     if (changeFlag)
                     {
-                        ReadDI?.Invoke(_leadingEdgeInputs, _trailingEdgeInputs, (DateTime.Now - dateTime).TotalMilliseconds);
+                        ReadDi?.Invoke(leadingEdgeInputs, trailingEdgeInputs, (DateTime.Now - dateTime).TotalMilliseconds);
                         changeFlag = false;
                     }
                 }
@@ -223,18 +255,18 @@ namespace Motrum.Wpf.Services
                     Error?.Invoke(ex.Message);
                     Thread.Sleep(ErrorTimeout);
                 }
-                _writeSingleDOTask?.Wait();
-                _writeMultipleDOTask?.Wait();
+                _writeSingleDoTask?.Wait();
+                _writeMultipleDoTask?.Wait();
             }
         }
 
         private void ReadEncoderCycle()
         {
-            ushort[]? inputRegisters;
+            ushort[] inputRegisters;
 
             while (_startStopFlag)
             {
-                if (Config == null || !_connected || Config.EncoderNumberOfPoints == 0)
+                if (Config == null || !_connected || Config.EncoderNumberOfPoints == 0 || _modbusMaster == null)
                 {
                     Thread.Sleep(ErrorTimeout);
                     continue;
@@ -242,9 +274,9 @@ namespace Motrum.Wpf.Services
 
                 try
                 {
-                    inputRegisters = _modbusMaster?.ReadInputRegisters(Config.SlaveAddress, Config.EncoderStartAddress, Config.EncoderNumberOfPoints);
+                    inputRegisters = _modbusMaster.ReadInputRegisters(Config.SlaveAddress, Config.EncoderStartAddress, Config.EncoderNumberOfPoints);
 
-                    ReadEncoder?.Invoke(inputRegisters!);
+                    ReadEncoder?.Invoke(inputRegisters);
 
                     Thread.Sleep(Config.EncoderPollingPeriod);
                 }
@@ -256,45 +288,10 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private async Task<double> _WriteSingleDOAsync(ushort coilAddress, bool value)
+        private bool GetConnectionStatus()
         {
-            if (Config == null || !_connected)
-                return 0;
-
-            try
-            {
-                var dateTime = DateTime.Now;
-                await _modbusMaster!.WriteSingleCoilAsync(Config.SlaveAddress, coilAddress, value);
-                return (DateTime.Now - dateTime).TotalMicroseconds;
-            }
-            catch (Exception ex)
-            {
-                Error?.Invoke(ex.Message);
-                return 0;
-            }
-        }
-
-        private async Task<double> _WriteMultipleDOAsync(ushort startAddress, bool[] data)
-        {
-            if (Config == null || !_connected)
-                return 0;
-
-            try
-            {
-                var dateTime = DateTime.Now;
-                await _modbusMaster!.WriteMultipleCoilsAsync(Config.SlaveAddress, startAddress, data);
-                return (DateTime.Now - dateTime).TotalMicroseconds;
-            }
-            catch (Exception ex)
-            {
-                Error?.Invoke(ex.Message);
-                return 0;
-            }
-        }
-
-        private bool TcpClientConnected()
-        {
-            if (Config == null) return false;
+            if (Config == null) 
+                return false;
 
             using Ping ping = new();
             try

@@ -91,7 +91,7 @@ namespace Motrum.Wpf.Services
                     continue;
                 }
 
-                if (_connected = _serialPort != null && _serialPort!.IsOpen)
+                if (_connected = _serialPort != null && _serialPort.IsOpen)
                 {
                     Status?.Invoke(true);
                     Thread.Sleep(ConnStatusTimeout);
@@ -103,7 +103,7 @@ namespace Motrum.Wpf.Services
                 {
                     _serialPort = new SerialPort()
                     {
-                        PortName = Config.PortName!,
+                        PortName = Config.PortName,
                         BaudRate = Config.Baudrate,
                         Parity = Parity.None,
                         DataBits = DataBits,
@@ -131,7 +131,10 @@ namespace Motrum.Wpf.Services
             {
                 while (_startStopFlag)
                 {
-                    stringBuilder.Append(_serialPort!.ReadExisting());
+                    if (_serialPort == null)
+                        continue;
+
+                    stringBuilder.Append(_serialPort.ReadExisting());
 
                     if (_serialPort.BytesToRead == 0) break;
                 }
