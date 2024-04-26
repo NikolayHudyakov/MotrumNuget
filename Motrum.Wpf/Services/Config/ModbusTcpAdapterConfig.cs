@@ -21,16 +21,6 @@
         public byte SlaveAddress { get; set; }
 
         /// <summary>
-        /// Начальный адрес регистра для чтения дискретных входов
-        /// </summary>
-        public ushort DIStartAddress { get; set; }
-
-        /// <summary>
-        /// Колличество регистров для чтения дискретных входов
-        /// </summary>
-        public ushort DINumberOfPoints { get; set; }
-
-        /// <summary>
         /// Начальный адрес регистра для чтения скорости с модуля энкодера
         /// </summary>
         public ushort EncoderStartAddress { get; set; }

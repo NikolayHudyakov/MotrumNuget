@@ -1,7 +1,6 @@
 ﻿using Motrum.Wpf.Services.Config;
 using Motrum.Wpf.Services.Intefaces;
 using NModbus;
-using System.Diagnostics.Metrics;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using static Motrum.Wpf.Services.Intefaces.IModbusTcpAdapterService;
@@ -17,6 +16,7 @@ namespace Motrum.Wpf.Services
         private const int ErrorTimeout = 1000;
         private const int ConnStatusTimeout = 1000;
         private const int StartAddressDo = 0;
+        private const int StartAddressDi = 0;
 
         private bool _startStopFlag;
         private Thread? _connectionStatusThread;
@@ -27,7 +27,8 @@ namespace Motrum.Wpf.Services
         private Task? _writeMultipleDoTask;
         private Task? _writeSingleDoTask;
         private bool _connected;
-        private int _numberOfCoils;
+        private ushort _numberOfDi;
+        private ushort _numberOfDo;
 
         /// <summary>
         /// Настройки сервиса
@@ -141,8 +142,6 @@ namespace Motrum.Wpf.Services
                 _connectionStatusThread = new Thread(ConnectionStatusCycle);
                 _connectionStatusThread.Start();
 
-                _numberOfCoils = GetCountDo();
-
                 _readDiThread = new Thread(ReadDiCycle);
                 _readDiThread.Start();
 
@@ -163,7 +162,7 @@ namespace Motrum.Wpf.Services
                 _readDiThread?.Join();
                 _readEncoderThread?.Join();
 
-                WriteMultipleDoAsync(StartAddressDo, new bool[_numberOfCoils]).Wait();
+                WriteMultipleDoAsync(StartAddressDo, new bool[_numberOfDo]).Wait();
 
                 _tcpClient?.Close();
 
@@ -198,6 +197,9 @@ namespace Motrum.Wpf.Services
                 {
                     _tcpClient.Connect(Config.IPAddress, Config.Port);
                     _modbusMaster = new ModbusFactory().CreateMaster(_tcpClient);
+
+                    _numberOfDi = GetNumberOfDi(_modbusMaster, Config.SlaveAddress);
+                    _numberOfDo = GetNumberOfDo(_modbusMaster, Config.SlaveAddress);
                 }
                 catch (Exception ex)
                 {
@@ -218,21 +220,21 @@ namespace Motrum.Wpf.Services
 
             while (_startStopFlag)
             {
-                if (Config == null || !_connected || Config.DINumberOfPoints == 0 || _modbusMaster == null)
+                if (Config == null || !_connected || _numberOfDi == 0 || _modbusMaster == null)
                 {
                     Thread.Sleep(ErrorTimeout);
                     continue;
                 }
 
                 dateTime = DateTime.Now;
-                previousInputs ??= new bool[Config.DINumberOfPoints];
-                leadingEdgeInputs ??= new bool[Config.DINumberOfPoints];
-                trailingEdgeInputs ??= new bool[Config.DINumberOfPoints];
+                previousInputs ??= new bool[_numberOfDi];
+                leadingEdgeInputs ??= new bool[_numberOfDi];
+                trailingEdgeInputs ??= new bool[_numberOfDi];
                 try
                 {
-                    inputs = _modbusMaster.ReadInputs(Config.SlaveAddress, Config.DIStartAddress, Config.DINumberOfPoints);
+                    inputs = _modbusMaster.ReadInputs(Config.SlaveAddress, StartAddressDi, _numberOfDi);
 
-                    for (int i = 0; i < Config.DINumberOfPoints; i++)
+                    for (int i = 0; i < _numberOfDi; i++)
                     {
                         leadingEdgeInputs[i] = false;
                         trailingEdgeInputs[i] = false;
@@ -312,18 +314,32 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private int GetCountDo()
+        private ushort GetNumberOfDi(IModbusMaster modbusMaster, byte slaveAddress)
+        {
+            const ushort NumberOfPoints = 1;
+
+            for (ushort currentInput = 0; true; currentInput++)
+            {
+                try
+                {
+                    modbusMaster.ReadInputs(slaveAddress, currentInput, NumberOfPoints);
+                }
+                catch (SlaveException)
+                {
+                    return currentInput;
+                }
+            }
+        }
+
+        private ushort GetNumberOfDo(IModbusMaster modbusMaster, byte slaveAddress)
         {
             const ushort NumberOfPoints = 1;
 
             for (ushort currentCoil = 0; true; currentCoil++)
             {
-                if (Config == null || _connected || _modbusMaster == null)
-                    continue;
-
                 try
                 {
-                    _modbusMaster.ReadCoils(Config.SlaveAddress, currentCoil, NumberOfPoints);
+                    modbusMaster.ReadCoils(slaveAddress, currentCoil, NumberOfPoints);
                 }
                 catch (SlaveException)
                 {
