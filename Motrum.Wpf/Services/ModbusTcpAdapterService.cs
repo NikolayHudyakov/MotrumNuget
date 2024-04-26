@@ -119,20 +119,17 @@ namespace Motrum.Wpf.Services
             if (Config == null || !_connected || _modbusMaster == null)
                 return 0;
 
-            return await Task.Run(async () =>
+            try
             {
-                try
-                {
-                    var dateTime = DateTime.Now;
-                    await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(Config.SlaveAddress, startAddress, data));
-                    return (DateTime.Now - dateTime).TotalMicroseconds;
-                }
-                catch (Exception ex)
-                {
-                    Error?.Invoke(ex.Message);
-                    return 0;
-                }
-            });
+                var dateTime = DateTime.Now;
+                await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(Config.SlaveAddress, startAddress, data));
+                return (DateTime.Now - dateTime).TotalMicroseconds;
+            }
+            catch (Exception ex)
+            {
+                Error?.Invoke(ex.Message);
+                return 0;
+            }
         }
 
         private void Start()
