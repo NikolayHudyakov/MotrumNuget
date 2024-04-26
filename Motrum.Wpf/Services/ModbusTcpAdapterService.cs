@@ -1,6 +1,7 @@
 ﻿using Motrum.Wpf.Services.Config;
 using Motrum.Wpf.Services.Intefaces;
 using NModbus;
+using System.Diagnostics.Metrics;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using static Motrum.Wpf.Services.Intefaces.IModbusTcpAdapterService;
@@ -15,6 +16,7 @@ namespace Motrum.Wpf.Services
         private const int PingTimeout = 1000;
         private const int ErrorTimeout = 1000;
         private const int ConnStatusTimeout = 1000;
+        private const int StartAddressDo = 0;
 
         private bool _startStopFlag;
         private Thread? _connectionStatusThread;
@@ -25,6 +27,7 @@ namespace Motrum.Wpf.Services
         private Task? _writeMultipleDoTask;
         private Task? _writeSingleDoTask;
         private bool _connected;
+        private int _currentCoils;
 
         /// <summary>
         /// Настройки сервиса
@@ -68,14 +71,11 @@ namespace Motrum.Wpf.Services
             await Task.Run(Start);
 
         /// <summary>
-        /// Асинхронно останавливает сервис с указанием последовательности дискретных выходов, 
-        /// которые должны перейти в состояние false
+        /// Асинхронно останавливает сервис
         /// </summary>
-        /// <param name="startAddressDo">Начальный адрес регистра</param>
-        /// <param name="countDo">Количество регистров</param>
         /// <returns>Задача представляющая асинхронную остановку сервиса</returns>
-        public async Task StopAsync(ushort startAddressDo, int countDo) =>
-            await Task.Run(() => Stop(startAddressDo, countDo));
+        public async Task StopAsync() =>
+            await Task.Run(Stop);
 
 
         /// <summary>
@@ -119,17 +119,20 @@ namespace Motrum.Wpf.Services
             if (Config == null || !_connected || _modbusMaster == null)
                 return 0;
 
-            try
+            return await Task.Run(async () =>
             {
-                var dateTime = DateTime.Now;
-                await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(Config.SlaveAddress, startAddress, data));
-                return (DateTime.Now - dateTime).TotalMicroseconds;
-            }
-            catch (Exception ex)
-            {
-                Error?.Invoke(ex.Message);
-                return 0;
-            }
+                try
+                {
+                    var dateTime = DateTime.Now;
+                    await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(Config.SlaveAddress, startAddress, data));
+                    return (DateTime.Now - dateTime).TotalMicroseconds;
+                }
+                catch (Exception ex)
+                {
+                    Error?.Invoke(ex.Message);
+                    return 0;
+                }
+            });
         }
 
         private void Start()
@@ -141,6 +144,8 @@ namespace Motrum.Wpf.Services
                 _connectionStatusThread = new Thread(ConnectionStatusCycle);
                 _connectionStatusThread.Start();
 
+                _currentCoils = GetCountDo();
+
                 _readDiThread = new Thread(ReadDiCycle);
                 _readDiThread.Start();
 
@@ -149,7 +154,7 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private void Stop(ushort startAddressDo, int countDo)
+        private void Stop()
         {
             if (_startStopFlag)
             {
@@ -161,7 +166,7 @@ namespace Motrum.Wpf.Services
                 _readDiThread?.Join();
                 _readEncoderThread?.Join();
 
-                WriteMultipleDoAsync(startAddressDo, new bool[countDo]).Wait();
+                WriteMultipleDoAsync(StartAddressDo, new bool[_currentCoils]).Wait();
 
                 _tcpClient?.Close();
 
@@ -303,6 +308,26 @@ namespace Motrum.Wpf.Services
             {
                 return false;
             }
+        }
+
+        private int GetCountDo()
+        {
+            const ushort NumberOfPoints = 1;
+
+            for (ushort currentCoil = 0; true; currentCoil++)
+            {
+                if (Config == null || _connected || _modbusMaster == null)
+                    continue;
+
+                try
+                {
+                    _modbusMaster.ReadCoils(Config.SlaveAddress, currentCoil, NumberOfPoints);
+                }
+                catch (SlaveException)
+                {
+                    return currentCoil;
+                }
+            } 
         }
     }
 }

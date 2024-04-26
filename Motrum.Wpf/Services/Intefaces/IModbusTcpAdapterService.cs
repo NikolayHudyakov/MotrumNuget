@@ -63,13 +63,10 @@ namespace Motrum.Wpf.Services.Intefaces
         public Task StartAsync();
 
         /// <summary>
-        /// Асинхронно останавливает сервис с указанием последовательности дискретных выходов, 
-        /// которые должны перейти в состояние false
+        /// Асинхронно останавливает сервис с
         /// </summary>
-        /// <param name="startAddressDo">Начальный адрес регистра</param>
-        /// <param name="countDo">Количество регистров</param>
         /// <returns>Задача представляющая асинхронную остановку сервиса</returns>
-        public Task StopAsync(ushort startAddressDo, int countDo);
+        public Task StopAsync();
 
         /// <summary>
         /// Асинхронно записывает значение одного дискретного выхода
