@@ -257,8 +257,13 @@ namespace Motrum.Wpf.Services
                     Error?.Invoke(ex.Message);
                     Thread.Sleep(ErrorTimeout);
                 }
-                _writeSingleDoTask?.Wait();
-                _writeMultipleDoTask?.Wait();
+
+                try
+                {
+                    _writeSingleDoTask?.Wait();
+                    _writeMultipleDoTask?.Wait();
+                }
+                catch { }
             }
         }
 
