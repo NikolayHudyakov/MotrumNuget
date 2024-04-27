@@ -173,6 +173,8 @@ namespace Motrum.Wpf.Services
 
         private void ConnectionStatusCycle()
         {
+            Task taskConnection;
+
             while (_startStopFlag)
             {
                 if (Config == null)
@@ -195,7 +197,13 @@ namespace Motrum.Wpf.Services
 
                 try
                 {
-                    _tcpClient.Connect(Config.IPAddress, Config.Port);
+                    taskConnection = _tcpClient.ConnectAsync(Config.IPAddress, Config.Port);
+
+                    if (!taskConnection.Wait(ConnStatusTimeout))
+                    {
+                        throw new TimeoutException();
+                    }
+
                     _modbusMaster = new ModbusFactory().CreateMaster(_tcpClient);
 
                     _numberOfDi = GetNumberOfDi(_modbusMaster, Config.SlaveAddress);
@@ -204,7 +212,6 @@ namespace Motrum.Wpf.Services
                 catch (Exception ex)
                 {
                     Error?.Invoke(ex.Message);
-                    Thread.Sleep(ErrorTimeout);
                 }
             }
         }

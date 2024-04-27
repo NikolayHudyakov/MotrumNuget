@@ -113,6 +113,8 @@ namespace Motrum.Wpf.Services
 
         private void ConnectionStatusCycle()
         {
+            Task taskConnection;
+
             while (_startStopFlag)
             {
                 if (Config == null)
@@ -135,13 +137,18 @@ namespace Motrum.Wpf.Services
 
                 try
                 {
-                    _tcpClient.Connect(Config.IPAddress, Config.Port);
+                    taskConnection = _tcpClient.ConnectAsync(Config.IPAddress, Config.Port);
+
+                    if (!taskConnection.Wait(ConnStatusTimeout))
+                    {
+                        throw new TimeoutException();
+                    }
+
                     _networkStream = _tcpClient.GetStream();
                 }
                 catch (Exception ex)
                 {
                     Error?.Invoke(ex.Message);
-                    Thread.Sleep(ErrorTimeout);
                 }
             }
         }
