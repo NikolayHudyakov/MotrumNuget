@@ -78,7 +78,6 @@ namespace Motrum.Wpf.Services
         public async Task StopAsync() =>
             await Task.Run(Stop);
 
-
         /// <summary>
         /// Асинхронно записывает значение одного дискретного выхода
         /// </summary>
@@ -86,7 +85,7 @@ namespace Motrum.Wpf.Services
         /// <param name="value">Значение</param>
         /// <returns>
         /// Задача представляющая асинхронную запись,
-        /// результатом которой является время потраченое на запись в микросекундах
+        /// результатом которой является время потраченое на запись в милисекундах
         /// </returns>
         public async Task<double> WriteSingleDoAsync(ushort coilAddress, bool value)
         {
@@ -97,7 +96,7 @@ namespace Motrum.Wpf.Services
             {
                 var dateTime = DateTime.Now;
                 await (_writeSingleDoTask = _modbusMaster.WriteSingleCoilAsync(Config.SlaveAddress, coilAddress, value));
-                return (DateTime.Now - dateTime).TotalMicroseconds;
+                return (DateTime.Now - dateTime).TotalMilliseconds;
             }
             catch (Exception ex)
             {
@@ -113,7 +112,7 @@ namespace Motrum.Wpf.Services
         /// <param name="data">Значения</param>
         /// <returns>
         /// Задача представляющая асинхронную запись,
-        /// результатом которой является время потраченое на запись в микросекундах
+        /// результатом которой является время потраченое на запись в милисекундах
         /// </returns>
         public async Task<double> WriteMultipleDoAsync(ushort startAddress, bool[] data)
         {
@@ -124,7 +123,7 @@ namespace Motrum.Wpf.Services
             {
                 var dateTime = DateTime.Now;
                 await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(Config.SlaveAddress, startAddress, data));
-                return (DateTime.Now - dateTime).TotalMicroseconds;
+                return (DateTime.Now - dateTime).TotalMilliseconds;
             }
             catch (Exception ex)
             {

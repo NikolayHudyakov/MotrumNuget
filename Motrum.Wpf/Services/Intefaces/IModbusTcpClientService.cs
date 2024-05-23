@@ -3,18 +3,18 @@
 namespace Motrum.Wpf.Services.Intefaces
 {
     /// <summary>
-    /// Сервис для работы с сетевым адаптером Modbus TCP
+    /// Сервис для работы с Modbus TCP клиентом
     /// </summary>
-    public interface IModbusTcpAdapterService
+    public interface IModbusTcpClientService
     {
         /// <summary>
         /// Настройки сервиса
         /// </summary>
-        public ModbusTcpAdapterConfig? Config { get; set; }
+        public ModbusTcpClientConfig? Config { get; set; }
 
         /// <summary>
         /// Возникает один раз в секунду и указывает
-        /// статус подключения к адаптеру
+        /// статус подключения клиента к серверу
         /// </summary>
         public event Action<bool>? Status;
 
@@ -25,34 +25,7 @@ namespace Motrum.Wpf.Services.Intefaces
         public event Action<string>? Error;
 
         /// <summary>
-        /// Инкапсулирует метод, который обрабатывает появление переднего или заднего фронт
-        /// дискретных входов
-        /// </summary>
-        /// <param name="leadingEdgeInputs">Передний фронт</param>
-        /// <param name="trailingEdgeInputs">Задний фронт</param>
-        /// <param name="timeMillisecond">Время чтения дискретных входов</param>
-        public delegate void ReadDiEventHendler(bool[] leadingEdgeInputs, bool[] trailingEdgeInputs, double timeMillisecond);
-
-        /// <summary>
-        /// Возникает при появлении переднего или заднего
-        /// фронта на любом из дискретных входов определенных в <see cref="Config"/>
-        /// </summary>
-        public event ReadDiEventHendler? ReadDi;
-
-        /// <summary>
-        /// Инкапсулирует метод, который обрабатывает данные считанные с модуля энкодера
-        /// </summary>
-        /// <param name="buffer">Скорость энкодера (импульс/мин)</param>
-        public delegate void ReadEncoderEventHendler(ushort[] buffer);
-
-        /// <summary>
-        /// Возникает с периодичностью указанной в <see cref="Config"/> 
-        /// и представляет скорость энкодера в импульс/мин
-        /// </summary>
-        public event ReadEncoderEventHendler? ReadEncoder;
-
-        /// <summary>
-        /// Статус подключения к адаптеру
+        /// Статус подключения клиента к серверу
         /// </summary>
         public bool Connected { get; }
 
@@ -63,10 +36,21 @@ namespace Motrum.Wpf.Services.Intefaces
         public Task StartAsync();
 
         /// <summary>
-        /// Асинхронно останавливает сервис с
+        /// Асинхронно останавливает сервис
         /// </summary>
         /// <returns>Задача представляющая асинхронную остановку сервиса</returns>
         public Task StopAsync();
+
+        /// <summary>
+        /// Асинхронно считывает значения группы дискретных входов
+        /// </summary>
+        /// <param name="startAddress">Начальный адрес регистра</param>
+        /// <param name="numberOfPoints">Колличество регистров</param>
+        /// <returns>
+        /// Задача представляющая асинхронное чтение,
+        /// результатом которой является кортэж состоящий из масива входов и время потраченое на чтение в милисекундах
+        /// </returns>
+        public Task<(bool[] inputs, double timeMillisecond)> ReadMultipleDiAsync(ushort startAddress, ushort numberOfPoints);
 
         /// <summary>
         /// Асинхронно записывает значение одного дискретного выхода
