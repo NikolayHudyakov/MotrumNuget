@@ -73,5 +73,16 @@ namespace Motrum.Wpf.Services.Intefaces
         /// результатом которой является время потраченое на запись в милисекундах
         /// </returns>
         public Task<double> WriteMultipleDoAsync(ushort startAddress, bool[] data);
+
+        /// <summary>
+        /// Асинхронно записывает значение на аналоговый выход
+        /// </summary>
+        /// <param name="registerAddress">Адрес регистра</param>
+        /// <param name="value">Значение</param>
+        /// <returns>
+        /// Задача представляющая асинхронную запись,
+        /// результатом которой является время потраченое на запись в милисекундах
+        /// </returns>
+        public Task<double> WriteSingleAoAsync(ushort registerAddress, ushort value);
     }
 }

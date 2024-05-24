@@ -3,6 +3,7 @@ using Motrum.Wpf.Services.Intefaces;
 using NModbus;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Motrum.Wpf.Services
 {
@@ -21,6 +22,7 @@ namespace Motrum.Wpf.Services
         private IModbusMaster? _modbusMaster;
         private Task? _writeMultipleDoTask;
         private Task? _writeSingleDoTask;
+        private Task? _writeSingleAoTask;
         private Task<bool[]>? _readMultipleDiTask;
         private bool _connected;
 
@@ -134,6 +136,33 @@ namespace Motrum.Wpf.Services
             {
                 var dateTime = DateTime.Now;
                 await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(Config.SlaveAddress, startAddress, data));
+                return (DateTime.Now - dateTime).TotalMilliseconds;
+            }
+            catch (Exception ex)
+            {
+                Error?.Invoke(ex.Message);
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Асинхронно записывает значение на аналоговый выход
+        /// </summary>
+        /// <param name="registerAddress">Адрес регистра</param>
+        /// <param name="value">Значение</param>
+        /// <returns>
+        /// Задача представляющая асинхронную запись,
+        /// результатом которой является время потраченое на запись в милисекундах
+        /// </returns>
+        public async Task<double> WriteSingleAoAsync(ushort registerAddress, ushort value)
+        {
+            if (Config == null || !_connected || _modbusMaster == null)
+                return 0;
+
+            try
+            {
+                var dateTime = DateTime.Now;
+                await (_writeSingleAoTask = _modbusMaster.WriteSingleRegisterAsync(Config.SlaveAddress, registerAddress, value));
                 return (DateTime.Now - dateTime).TotalMilliseconds;
             }
             catch (Exception ex)
