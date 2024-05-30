@@ -75,7 +75,7 @@ namespace Motrum.Wpf.Services
         {
             try
             {
-                if (Config == null || !_connected || _modbusMaster == null)
+                if (Config == null || _modbusMaster == null)
                     throw new Exception("Не заданы настройки сервиса или ошибка подключения");
 
                 var dateTime = DateTime.Now;
