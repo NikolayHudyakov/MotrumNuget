@@ -15,6 +15,8 @@ namespace Motrum.Wpf.Services
         private const int PingTimeout = 1000;
         private const int ErrorTimeout = 1000;
         private const int ConnStatusTimeout = 1000;
+        private const int ReadTimeout = 500;
+        private const int WriteTimeout = 500;
 
         private bool _startStopFlag;
         private Thread? _connectionStatusThread;
@@ -137,6 +139,8 @@ namespace Motrum.Wpf.Services
                 {
                     _tcpClient.Connect(Config.IPAddress, Config.Port);
                     _networkStream = _tcpClient.GetStream();
+                    _networkStream.ReadTimeout = ReadTimeout;
+                    _networkStream.WriteTimeout = WriteTimeout;
                 }
                 catch (Exception ex)
                 {

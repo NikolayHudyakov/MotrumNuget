@@ -53,7 +53,7 @@ namespace Motrum.Wpf.DataBase
                 return 0;
             }
         }
-
+        
         public DataTable FromSqlRaw(string sql, params object?[] parameters)
         {
             var data = new DataTable();
