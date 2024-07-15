@@ -10,14 +10,11 @@ namespace Motrum.Wpf.Services.Intefaces
     public interface IDataBaseService
     {
         /// <summary>
-        /// Настройки для работы с базой данных
-        /// </summary>
-        public DataBaseConfig Config { get; set; }
-
-        /// <summary>
-        /// Обьект для работы с конретной базой данных определенной в
+        /// Возвращает конретную базу данных определеную в
         /// настройках <see cref="DataBaseConfig"/>
         /// </summary>
-        public IDataBase DataBase { get; }
+        /// <param name="config"></param>
+        /// <returns>Обьект базы данных</returns>
+        public IDataBase GetDataBase(DataBaseConfig config);
     }
 }

@@ -8,11 +8,6 @@ namespace Motrum.Wpf.Services.Intefaces
     public interface IModbusTcpAdapterService
     {
         /// <summary>
-        /// Настройки сервиса
-        /// </summary>
-        public ModbusTcpAdapterConfig? Config { get; set; }
-
-        /// <summary>
         /// Возникает один раз в секунду и указывает
         /// статус подключения к адаптеру
         /// </summary>
@@ -59,11 +54,12 @@ namespace Motrum.Wpf.Services.Intefaces
         /// <summary>
         /// Асинхронно запускает сервис
         /// </summary>
+        /// <param name="config">Настройки сервиса</param>
         /// <returns>Задача представляющая асинхронный запуск сервиса</returns>
-        public Task StartAsync();
+        public Task StartAsync(ModbusTcpAdapterConfig config);
 
         /// <summary>
-        /// Асинхронно останавливает сервис с
+        /// Асинхронно останавливает сервис
         /// </summary>
         /// <returns>Задача представляющая асинхронную остановку сервиса</returns>
         public Task StopAsync();

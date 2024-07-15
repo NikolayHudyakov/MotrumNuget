@@ -8,11 +8,6 @@ namespace Motrum.Wpf.Services.Intefaces
     public interface ISerialPortService
     {
         /// <summary>
-        /// Настройки сервиса
-        /// </summary>
-        public SerialPortConfig? Config { get; set; }
-
-        /// <summary>
         /// Возникает один раз в секунду и указывает
         /// статус подключения к устройству
         /// </summary>
@@ -37,8 +32,9 @@ namespace Motrum.Wpf.Services.Intefaces
         /// <summary>
         /// Асинхронно запускает сервис
         /// </summary>
+        /// <param name="config">Настройки сервиса</param>
         /// <returns>Задача представляющая асинхронный запуск сервиса</returns>
-        public Task StartAsync();
+        public Task StartAsync(SerialPortConfig config);
 
         /// <summary>
         /// Асинхронно останавливает сервис

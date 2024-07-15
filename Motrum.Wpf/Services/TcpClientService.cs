@@ -15,20 +15,14 @@ namespace Motrum.Wpf.Services
         private const int PingTimeout = 1000;
         private const int ErrorTimeout = 1000;
         private const int ConnStatusTimeout = 1000;
-        private const int ReadTimeout = 500;
-        private const int WriteTimeout = 500;
 
+        private TcpClientConfig? _config;
         private bool _startStopFlag;
         private Thread? _connectionStatusThread;
         private Thread? _receiveThread;
         private TcpClient? _tcpClient;
         private bool _connected;
         private NetworkStream? _networkStream;
-
-        /// <summary>
-        /// Настройки сервиса
-        /// </summary>
-        public TcpClientConfig? Config { get; set; }
 
         /// <summary>
         /// Статус подключения к TCP серверу
@@ -55,8 +49,9 @@ namespace Motrum.Wpf.Services
         /// <summary>
         /// Асинхронно запускает сервис
         /// </summary>
+        /// <param name="config">Настройки сервиса</param>
         /// <returns>Задача представляющая асинхронный запуск сервиса</returns>
-        public async Task StartAsync() => await Task.Run(Start);
+        public async Task StartAsync(TcpClientConfig config) => await Task.Run(() => Start(config));
 
         /// <summary>
         /// Асинхронно останавливает сервис
@@ -71,7 +66,7 @@ namespace Motrum.Wpf.Services
         /// <returns>Задача представляющая асинхронную отправку данных на TCP сервер</returns>
         public async Task SendDataAsync(string data)
         {
-            if (Config == null || !_connected || _networkStream == null)
+            if (_config == null || !_connected || _networkStream == null)
                 return;
 
             try
@@ -85,14 +80,16 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private void Start()
+        private void Start(TcpClientConfig config)
         {
             if (!_startStopFlag)
             {
+                _config = config;
+
                 _startStopFlag = true;
 
                 _connectionStatusThread = new Thread(ConnectionStatusCycle);
-                _connectionStatusThread.Start();
+                _connectionStatusThread.Start(config);
 
                 _receiveThread = new Thread(ReceiveCycle);
                 _receiveThread.Start();
@@ -114,17 +111,14 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private void ConnectionStatusCycle()
+        private void ConnectionStatusCycle(object? obj)
         {
+            if (obj is not TcpClientConfig config)
+                return;
+
             while (_startStopFlag)
             {
-                if (Config == null)
-                {
-                    Thread.Sleep(ErrorTimeout);
-                    continue;
-                }
-
-                if (_connected = GetConnectionStatus())
+                if (_connected = GetConnectionStatus(config))
                 {
                     Status?.Invoke(true);
                     Thread.Sleep(ConnStatusTimeout);
@@ -138,10 +132,8 @@ namespace Motrum.Wpf.Services
 
                 try
                 {
-                    _tcpClient.Connect(Config.IPAddress, Config.Port);
+                    _tcpClient.Connect(config.IPAddress, config.Port);
                     _networkStream = _tcpClient.GetStream();
-                    _networkStream.ReadTimeout = ReadTimeout;
-                    _networkStream.WriteTimeout = WriteTimeout;
                 }
                 catch (Exception ex)
                 {
@@ -156,7 +148,7 @@ namespace Motrum.Wpf.Services
 
             while (_startStopFlag)
             {
-                if (Config == null || !_connected || _tcpClient == null || _networkStream == null)
+                if (!_connected || _tcpClient == null || _networkStream == null)
                 {
                     Thread.Sleep(ErrorTimeout);
                     continue;
@@ -171,21 +163,19 @@ namespace Motrum.Wpf.Services
                 }
                 catch (Exception ex)
                 {
-                    Error?.Invoke(ex.Message);
+                    if(_startStopFlag)
+                        Error?.Invoke(ex.Message);
                     Thread.Sleep(ErrorTimeout);
                 }
             }
         }
 
-        private bool GetConnectionStatus()
+        private bool GetConnectionStatus(TcpClientConfig config)
         {
-            if (Config == null) 
-                return false;
-
             using Ping ping = new();
             try
             {
-                return ping.Send(Config.IPAddress, PingTimeout).Status == IPStatus.Success &&
+                return ping.Send(config.IPAddress, PingTimeout).Status == IPStatus.Success &&
                     _tcpClient != null && _tcpClient.Connected;
             }
             catch

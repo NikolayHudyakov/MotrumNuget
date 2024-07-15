@@ -4,6 +4,7 @@ using NModbus;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using static Motrum.Wpf.Services.Intefaces.IModbusTcpAdapterService;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Motrum.Wpf.Services
 {
@@ -18,6 +19,7 @@ namespace Motrum.Wpf.Services
         private const int StartAddressDo = 0;
         private const int StartAddressDi = 0;
 
+        private ModbusTcpAdapterConfig? _config;
         private bool _startStopFlag;
         private Thread? _connectionStatusThread;
         private Thread? _readDiThread;
@@ -33,7 +35,6 @@ namespace Motrum.Wpf.Services
         /// <summary>
         /// Настройки сервиса
         /// </summary>
-        public ModbusTcpAdapterConfig? Config { get; set; }
 
         /// <summary>
         /// Статус подключения к адаптеру
@@ -67,9 +68,10 @@ namespace Motrum.Wpf.Services
         /// <summary>
         /// Асинхронно запускает сервис
         /// </summary>
+        /// <param name="config">Настройки сервиса</param>
         /// <returns>Задача представляющая асинхронный запуск сервиса</returns>
-        public async Task StartAsync() =>
-            await Task.Run(Start);
+        public async Task StartAsync(ModbusTcpAdapterConfig config) =>
+            await Task.Run(() => Start(config));
 
         /// <summary>
         /// Асинхронно останавливает сервис
@@ -89,13 +91,13 @@ namespace Motrum.Wpf.Services
         /// </returns>
         public async Task<double> WriteSingleDoAsync(ushort coilAddress, bool value)
         {
-            if (Config == null || !_connected || _modbusMaster == null)
+            if (_config == null || !_connected || _modbusMaster == null)
                 return 0;
 
             try
             {
                 var dateTime = DateTime.Now;
-                await (_writeSingleDoTask = _modbusMaster.WriteSingleCoilAsync(Config.SlaveAddress, coilAddress, value));
+                await (_writeSingleDoTask = _modbusMaster.WriteSingleCoilAsync(_config.SlaveAddress, coilAddress, value));
                 return (DateTime.Now - dateTime).TotalMilliseconds;
             }
             catch (Exception ex)
@@ -116,13 +118,13 @@ namespace Motrum.Wpf.Services
         /// </returns>
         public async Task<double> WriteMultipleDoAsync(ushort startAddress, bool[] data)
         {
-            if (Config == null || !_connected || _modbusMaster == null)
+            if (_config == null || !_connected || _modbusMaster == null)
                 return 0;
 
             try
             {
                 var dateTime = DateTime.Now;
-                await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(Config.SlaveAddress, startAddress, data));
+                await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(_config.SlaveAddress, startAddress, data));
                 return (DateTime.Now - dateTime).TotalMilliseconds;
             }
             catch (Exception ex)
@@ -132,20 +134,22 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private void Start()
+        private void Start(ModbusTcpAdapterConfig config)
         {
             if (!_startStopFlag)
             {
+                _config = config;
+
                 _startStopFlag = true;
 
                 _connectionStatusThread = new Thread(ConnectionStatusCycle);
-                _connectionStatusThread.Start();
+                _connectionStatusThread.Start(config);
 
                 _readDiThread = new Thread(ReadDiCycle);
-                _readDiThread.Start();
+                _readDiThread.Start(config);
 
                 _readEncoderThread = new Thread(ReadEncoderCycle);
-                _readEncoderThread.Start();
+                _readEncoderThread.Start(config);
             }
         }
 
@@ -170,16 +174,13 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private void ConnectionStatusCycle()
+        private void ConnectionStatusCycle(object? obj)
         {
+            if (obj is not ModbusTcpAdapterConfig config)
+                return;
+
             while (_startStopFlag)
             {
-                if (Config == null)
-                {
-                    Thread.Sleep(ErrorTimeout);
-                    continue;
-                }
-
                 if (_connected = GetConnectionStatus())
                 {
                     Status?.Invoke(true);
@@ -194,11 +195,11 @@ namespace Motrum.Wpf.Services
 
                 try
                 {
-                    _tcpClient.Connect(Config.IPAddress, Config.Port);
+                    _tcpClient.Connect(config.IPAddress, config.Port);
                     _modbusMaster = new ModbusFactory().CreateMaster(_tcpClient);
 
-                    _numberOfDi = GetNumberOfDi(_modbusMaster, Config.SlaveAddress);
-                    _numberOfDo = GetNumberOfDo(_modbusMaster, Config.SlaveAddress);
+                    _numberOfDi = GetNumberOfDi(_modbusMaster, config.SlaveAddress);
+                    _numberOfDo = GetNumberOfDo(_modbusMaster, config.SlaveAddress);
                 }
                 catch (Exception ex)
                 {
@@ -207,8 +208,11 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private void ReadDiCycle()
+        private void ReadDiCycle(object? obj)
         {
+            if (obj is not ModbusTcpAdapterConfig config)
+                return;
+
             var changeFlag = false;
             DateTime dateTime;
             bool[]? previousInputs = null;
@@ -218,7 +222,7 @@ namespace Motrum.Wpf.Services
 
             while (_startStopFlag)
             {
-                if (Config == null || !_connected || _numberOfDi == 0 || _modbusMaster == null)
+                if (!_connected || _numberOfDi == 0 || _modbusMaster == null)
                 {
                     Thread.Sleep(ErrorTimeout);
                     continue;
@@ -230,7 +234,7 @@ namespace Motrum.Wpf.Services
                 trailingEdgeInputs ??= new bool[_numberOfDi];
                 try
                 {
-                    inputs = _modbusMaster.ReadInputs(Config.SlaveAddress, StartAddressDi, _numberOfDi);
+                    inputs = _modbusMaster.ReadInputs(config.SlaveAddress, StartAddressDi, _numberOfDi);
 
                     for (int i = 0; i < _numberOfDi; i++)
                     {
@@ -267,13 +271,16 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private void ReadEncoderCycle()
+        private void ReadEncoderCycle(object? obj)
         {
+            if (obj is not ModbusTcpAdapterConfig config)
+                return;
+
             ushort[] inputRegisters;
 
             while (_startStopFlag)
             {
-                if (Config == null || !_connected || Config.EncoderNumberOfPoints == 0 || _modbusMaster == null)
+                if (!_connected || config.EncoderNumberOfPoints == 0 || _modbusMaster == null)
                 {
                     Thread.Sleep(ErrorTimeout);
                     continue;
@@ -281,11 +288,11 @@ namespace Motrum.Wpf.Services
 
                 try
                 {
-                    inputRegisters = _modbusMaster.ReadInputRegisters(Config.SlaveAddress, Config.EncoderStartAddress, Config.EncoderNumberOfPoints);
+                    inputRegisters = _modbusMaster.ReadInputRegisters(config.SlaveAddress, config.EncoderStartAddress, config.EncoderNumberOfPoints);
 
                     ReadEncoder?.Invoke(inputRegisters);
 
-                    Thread.Sleep(Config.EncoderPollingPeriod);
+                    Thread.Sleep(config.EncoderPollingPeriod);
                 }
                 catch (Exception ex)
                 {
@@ -297,13 +304,13 @@ namespace Motrum.Wpf.Services
 
         private bool GetConnectionStatus()
         {
-            if (Config == null) 
+            if (_config == null) 
                 return false;
 
             using Ping ping = new();
             try
             {
-                return ping.Send(Config.IPAddress, PingTimeout).Status == IPStatus.Success &&
+                return ping.Send(_config.IPAddress, PingTimeout).Status == IPStatus.Success &&
                     _tcpClient != null && _tcpClient.Connected;
             }
             catch

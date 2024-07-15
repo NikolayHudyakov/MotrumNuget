@@ -33,8 +33,11 @@ namespace Motrum.Wpf.DataBase
         {
             try
             {
+                if (_сonnection == null)
+                    throw new Exception("Сервис не запущен");
+
                 lock (_lockObjExecuteReader)
-                    using (MySqlCommand command = _сonnection!.CreateCommand())
+                    using (MySqlCommand command = _сonnection.CreateCommand())
                     {
                         var paramNames = Enumerable.Range(0, parameters.Length).Select((i) => $"@{i}").ToArray();
 
@@ -59,8 +62,11 @@ namespace Motrum.Wpf.DataBase
             var data = new DataTable();
             try
             {
+                if (_сonnection == null)
+                    throw new Exception("Сервис не запущен");
+
                 lock (_lockObjExecuteReader)
-                    using (MySqlCommand command = _сonnection!.CreateCommand())
+                    using (MySqlCommand command = _сonnection.CreateCommand())
                     {
                         var paramNames = Enumerable.Range(0, parameters.Length).Select((i) => $"@{i}").ToArray();
 

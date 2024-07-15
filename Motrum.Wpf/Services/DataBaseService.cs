@@ -12,25 +12,19 @@ namespace Motrum.Wpf.Services
     /// </summary>
     public class DataBaseService : IDataBaseService
     {
-        private readonly IDataBase? _dataBase;
-
         /// <summary>
-        /// Обьект для работы с конретной базой данных определенной в
+        /// Возвращает конретную базу данных определеную в
         /// настройках <see cref="DataBaseConfig"/>
         /// </summary>
-        public IDataBase DataBase => _dataBase ?? GetDataBase();
-
-        /// <summary>
-        /// Настройки для работы с базой данных
-        /// </summary>
-        public DataBaseConfig Config { get; set; } = new();
-
-        private IDataBase GetDataBase()
+        /// <param name="сonfig"></param>
+        /// <returns>Обьект базы данных</returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public IDataBase GetDataBase(DataBaseConfig сonfig)
         {
-            return Config.Dbms switch
+            return сonfig.Dbms switch
             {
-                DbmsType.PostgreSql => new PostgreSql() { Dto = Config.PostgreSql },
-                DbmsType.MySql => new DataBase.MySql() { Dto = Config.MySql },
+                DbmsType.PostgreSql => new PostgreSql() { Dto = сonfig.PostgreSql },
+                DbmsType.MySql => new DataBase.MySql() { Dto = сonfig.MySql },
                 _ => throw new InvalidOperationException("СУБД не поддерживается"),
             };
         }

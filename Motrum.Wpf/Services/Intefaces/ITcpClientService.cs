@@ -8,11 +8,6 @@ namespace Motrum.Wpf.Services.Intefaces
     public interface ITcpClientService
     {
         /// <summary>
-        /// Настройки сервиса
-        /// </summary>
-        public TcpClientConfig? Config { get; set; }
-
-        /// <summary>
         /// Возникает один раз в секунду и указывает
         /// статус подключения к TCP серверу
         /// </summary>
@@ -43,8 +38,9 @@ namespace Motrum.Wpf.Services.Intefaces
         /// <summary>
         /// Асинхронно запускает сервис
         /// </summary>
+        /// <param name="config">Настройки сервиса</param>
         /// <returns>Задача представляющая асинхронный запуск сервиса</returns>
-        public Task StartAsync();
+        public Task StartAsync(TcpClientConfig config);
 
         /// <summary>
         /// Асинхронно останавливает сервис

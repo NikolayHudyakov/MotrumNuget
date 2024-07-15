@@ -19,11 +19,7 @@ namespace Motrum.Wpf.Services
         private Thread? _connectionStatusThread;
         private SerialPort? _serialPort;
         private bool _connected;
-        /// <summary>
-        /// Настройки сервиса
-        /// </summary>
-        public SerialPortConfig? Config { get; set; }
-
+        
         /// <summary>
         /// Асинхронно запускает сервис
         /// </summary>
@@ -51,8 +47,9 @@ namespace Motrum.Wpf.Services
         /// <summary>
         /// Асинхронно запускает сервис
         /// </summary>
+        /// <param name="config">Настройки сервиса</param>
         /// <returns>Задача представляющая асинхронный запуск сервиса</returns>
-        public async Task StartAsync() => await Task.Run(Start);
+        public async Task StartAsync(SerialPortConfig config) => await Task.Run(() => Start(config));
 
         /// <summary>
         /// Асинхронно останавливает сервис
@@ -70,27 +67,24 @@ namespace Motrum.Wpf.Services
             throw new NotImplementedException();
         }
 
-        private void Start()
+        private void Start(SerialPortConfig config)
         {
             if (!_startStopFlag)
             {
                 _startStopFlag = true;
 
                 _connectionStatusThread = new Thread(ConnectionStatusCycle);
-                _connectionStatusThread.Start();
+                _connectionStatusThread.Start(config);
             }
         }
 
-        private void ConnectionStatusCycle()
+        private void ConnectionStatusCycle(object? obj)
         {
+            if (obj is not SerialPortConfig config)
+                return;
+
             while (_startStopFlag)
             {
-                if (Config == null)
-                {
-                    Thread.Sleep(ErrorTimeout);
-                    continue;
-                }
-
                 if (_connected = _serialPort != null && _serialPort.IsOpen)
                 {
                     Status?.Invoke(true);
@@ -103,8 +97,8 @@ namespace Motrum.Wpf.Services
                 {
                     _serialPort = new SerialPort()
                     {
-                        PortName = Config.PortName,
-                        BaudRate = Config.Baudrate,
+                        PortName = config.PortName,
+                        BaudRate = config.Baudrate,
                         Parity = Parity.None,
                         DataBits = DataBits,
                         StopBits = StopBits.One

@@ -3,7 +3,6 @@ using Motrum.Wpf.Services.Intefaces;
 using NModbus;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Motrum.Wpf.Services
 {
@@ -16,6 +15,7 @@ namespace Motrum.Wpf.Services
         private const int ErrorTimeout = 1000;
         private const int ConnStatusTimeout = 1000;
 
+        private ModbusTcpClientConfig? _config;
         private bool _startStopFlag;
         private Thread? _connectionStatusThread;
         private TcpClient? _tcpClient;
@@ -32,11 +32,6 @@ namespace Motrum.Wpf.Services
         public bool Connected => _connected;
 
         /// <summary>
-        /// Настройки сервиса
-        /// </summary>
-        public ModbusTcpClientConfig? Config { get; set; }
-
-        /// <summary>
         /// Возникает один раз в секунду и указывает
         /// статус подключения клиента к серверу
         /// </summary>
@@ -51,9 +46,10 @@ namespace Motrum.Wpf.Services
         /// <summary>
         /// Асинхронно запускает сервис
         /// </summary>
+        /// <param name="config">Настройки сервиса</param>
         /// <returns>Задача представляющая асинхронный запуск сервиса</returns>
-        public async Task StartAsync() =>
-            await Task.Run(Start);
+        public async Task StartAsync(ModbusTcpClientConfig config) =>
+            await Task.Run(() => Start(config));
 
         /// <summary>
         /// Асинхронно останавливает сервис
@@ -75,12 +71,12 @@ namespace Motrum.Wpf.Services
         {
             try
             {
-                if (Config == null || _modbusMaster == null)
+                if (_config == null || _modbusMaster == null)
                     throw new Exception("Не заданы настройки сервиса или ошибка подключения");
 
                 var dateTime = DateTime.Now;
 
-                bool[] inputs = await(_readMultipleDiTask = _modbusMaster.ReadInputsAsync(Config.SlaveAddress, startAddress, numberOfPoints));
+                bool[] inputs = await(_readMultipleDiTask = _modbusMaster.ReadInputsAsync(_config.SlaveAddress, startAddress, numberOfPoints));
 
                 return (inputs, (DateTime.Now - dateTime).TotalMilliseconds);
             }
@@ -102,13 +98,13 @@ namespace Motrum.Wpf.Services
         /// </returns>
         public async Task<double> WriteSingleDoAsync(ushort coilAddress, bool value)
         {
-            if (Config == null || !_connected || _modbusMaster == null)
+            if (_config == null || !_connected || _modbusMaster == null)
                 return 0;
 
             try
             {
                 var dateTime = DateTime.Now;
-                await (_writeSingleDoTask = _modbusMaster.WriteSingleCoilAsync(Config.SlaveAddress, coilAddress, value));
+                await (_writeSingleDoTask = _modbusMaster.WriteSingleCoilAsync(_config.SlaveAddress, coilAddress, value));
                 return (DateTime.Now - dateTime).TotalMilliseconds;
             }
             catch (Exception ex)
@@ -129,13 +125,13 @@ namespace Motrum.Wpf.Services
         /// </returns>
         public async Task<double> WriteMultipleDoAsync(ushort startAddress, bool[] data)
         {
-            if (Config == null || !_connected || _modbusMaster == null)
+            if (_config == null || !_connected || _modbusMaster == null)
                 return 0;
 
             try
             {
                 var dateTime = DateTime.Now;
-                await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(Config.SlaveAddress, startAddress, data));
+                await (_writeMultipleDoTask = _modbusMaster.WriteMultipleCoilsAsync(_config.SlaveAddress, startAddress, data));
                 return (DateTime.Now - dateTime).TotalMilliseconds;
             }
             catch (Exception ex)
@@ -156,13 +152,13 @@ namespace Motrum.Wpf.Services
         /// </returns>
         public async Task<double> WriteSingleAoAsync(ushort registerAddress, ushort value)
         {
-            if (Config == null || !_connected || _modbusMaster == null)
+            if (_config == null || !_connected || _modbusMaster == null)
                 return 0;
 
             try
             {
                 var dateTime = DateTime.Now;
-                await (_writeSingleAoTask = _modbusMaster.WriteSingleRegisterAsync(Config.SlaveAddress, registerAddress, value));
+                await (_writeSingleAoTask = _modbusMaster.WriteSingleRegisterAsync(_config.SlaveAddress, registerAddress, value));
                 return (DateTime.Now - dateTime).TotalMilliseconds;
             }
             catch (Exception ex)
@@ -172,14 +168,16 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private void Start()
+        private void Start(ModbusTcpClientConfig config)
         {
             if (!_startStopFlag)
             {
+                _config = config;
+
                 _startStopFlag = true;
 
                 _connectionStatusThread = new Thread(ConnectionStatusCycle);
-                _connectionStatusThread.Start();
+                _connectionStatusThread.Start(config);
             }
         }
 
@@ -200,17 +198,14 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private void ConnectionStatusCycle()
+        private void ConnectionStatusCycle(object? obj)
         {
+            if (obj is not ModbusTcpClientConfig config)
+                return;
+
             while (_startStopFlag)
             {
-                if (Config == null)
-                {
-                    Thread.Sleep(ErrorTimeout);
-                    continue;
-                }
-
-                if (_connected = GetConnectionStatus())
+                if (_connected = GetConnectionStatus(config))
                 {
                     Status?.Invoke(true);
                     Thread.Sleep(ConnStatusTimeout);
@@ -224,7 +219,7 @@ namespace Motrum.Wpf.Services
 
                 try
                 {
-                    _tcpClient.Connect(Config.IpAddress, Config.Port);
+                    _tcpClient.Connect(config.IpAddress, config.Port);
                     _modbusMaster = new ModbusFactory().CreateMaster(_tcpClient);
                 }
                 catch (Exception ex)
@@ -234,15 +229,12 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private bool GetConnectionStatus()
+        private bool GetConnectionStatus(ModbusTcpClientConfig config)
         {
-            if (Config == null)
-                return false;
-
             using Ping ping = new();
             try
             {
-                return ping.Send(Config.IpAddress, PingTimeout).Status == IPStatus.Success &&
+                return ping.Send(config.IpAddress, PingTimeout).Status == IPStatus.Success &&
                     _tcpClient != null && _tcpClient.Connected;
             }
             catch
