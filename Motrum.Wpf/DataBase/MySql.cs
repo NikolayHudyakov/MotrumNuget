@@ -6,7 +6,7 @@ using System.Net.NetworkInformation;
 
 namespace Motrum.Wpf.DataBase
 {
-    internal class MySql : IDataBase<MySqlConfig>
+    internal class MySql : IDataBase<DbConfig>
     {
         private const int PingTimeout = 1000;
         private const int ErrorTimeout = 1000;
@@ -18,14 +18,12 @@ namespace Motrum.Wpf.DataBase
         private readonly object _lockObjExecuteReader = new();
         private bool _connected;
 
-        public MySqlConfig? Dto { get; set; }
-
-        bool IDataBase.Connected => _connected;
+        public bool Connected => _connected;
 
         public event Action<bool>? Status;
         public event Action<string>? Error;
 
-        public async Task StartAsync() => await Task.Run(Start);
+        public async Task StartAsync(DbConfig config) => await Task.Run(() => Start(config));
 
         public async Task StopAsync() => await Task.Run(Stop);
 
@@ -87,7 +85,7 @@ namespace Motrum.Wpf.DataBase
             }
         }
 
-        private void Start()
+        private void Start(DbConfig config)
         {
             if (!_startStopFlag)
             {
@@ -98,11 +96,11 @@ namespace Motrum.Wpf.DataBase
 
                     _сonnection.ConnectionString =
                         $"""
-                         Server = {Dto!.Server};
-                         Port = {Dto.Port};
-                         User Id = {Dto.User};
-                         Password = {Dto.Password};
-                         Database = {Dto.DataBase}
+                         Server = {config.Server};
+                         Port = {config.Port};
+                         User Id = {config.User};
+                         Password = {config.Password};
+                         Database = {config.DataBase}
                          """;
                 }
                 catch (Exception ex)
@@ -111,7 +109,7 @@ namespace Motrum.Wpf.DataBase
                 }
 
                 _connectionStatusThread = new Thread(ConnectionStatusCycle);
-                _connectionStatusThread.Start();
+                _connectionStatusThread.Start(config);
             }
         }
 
@@ -130,14 +128,14 @@ namespace Motrum.Wpf.DataBase
             }
         }
 
-        private void ConnectionStatusCycle()
+        private void ConnectionStatusCycle(object? obj)
         {
+            if (obj is not DbConfig config)
+                return;
+
             while (_startStopFlag)
             {
-                if (Dto == null)
-                    continue;
-
-                if (_connected = Connected())
+                if (_connected = GetConnectionStatus(config))
                 {
                     Status?.Invoke(true);
                     Thread.Sleep(ConnStatusTimeout);
@@ -158,13 +156,13 @@ namespace Motrum.Wpf.DataBase
             }
         }
 
-        private bool Connected()
+        private bool GetConnectionStatus(DbConfig config)
         {
             try
             {
                 using Ping ping = new();
-                return ping.Send(Dto!.Server!, PingTimeout).Status == IPStatus.Success &&
-                    _сonnection!.State == ConnectionState.Open;
+                return ping.Send(config.Server, PingTimeout).Status == IPStatus.Success &&
+                    _сonnection != null && _сonnection.State == ConnectionState.Open;
             }
             catch
             {

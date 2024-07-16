@@ -6,7 +6,7 @@ namespace Motrum.Wpf.DataBase.Interfases
     /// Сервис для работы с базой данных<br/>
     /// Следит за подключением к бд
     /// </summary>
-    public interface IDataBase
+    public interface IDataBase<T>
     {
         /// <summary>
         /// Возникает один раз в секунду и указывает
@@ -29,7 +29,7 @@ namespace Motrum.Wpf.DataBase.Interfases
         /// Асинхронно запускает сервис
         /// </summary>
         /// <returns>Задача представляющая асинхронный запуск сервиса</returns>
-        public Task StartAsync();
+        public Task StartAsync(T config);
 
         /// <summary>
         /// Асинхронно останавливает сервис
@@ -54,10 +54,5 @@ namespace Motrum.Wpf.DataBase.Interfases
         /// <param name="parameters">Параметры для использования с SQL</param>
         /// <returns>Данные соотетствующие запрсу</returns>
         public DataTable FromSqlRaw(string sql, params object?[] parameters);
-    }
-
-    internal interface IDataBase<T> : IDataBase
-    {
-        protected T? Dto { get; set; }
     }
 }

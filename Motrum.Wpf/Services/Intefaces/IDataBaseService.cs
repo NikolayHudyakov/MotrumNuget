@@ -4,17 +4,10 @@ using Motrum.Wpf.Services.Config;
 namespace Motrum.Wpf.Services.Intefaces
 {
     /// <summary>
-    /// Сервис для работы с базами данных <br/>
-    /// Предоставляет обьект для работы с конретной базой данных
+    /// Сервис для работы с базой данных<br/>
+    /// Следит за подключением к бд
     /// </summary>
-    public interface IDataBaseService
+    public interface IDataBaseService : IDataBase<DataBaseConfig>
     {
-        /// <summary>
-        /// Возвращает конретную базу данных определеную в
-        /// настройках <see cref="DataBaseConfig"/>
-        /// </summary>
-        /// <param name="config"></param>
-        /// <returns>Обьект базы данных</returns>
-        public IDataBase GetDataBase(DataBaseConfig config);
     }
 }

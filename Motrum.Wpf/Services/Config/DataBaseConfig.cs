@@ -14,13 +14,13 @@ namespace Motrum.Wpf.Services.Config
         public DbmsType Dbms { get; set; }
 
         /// <summary>
-        /// Параметры подключения к базе данных
+        /// Параметры подключения к PostgreSql
         /// </summary>
-        public PostgreSqlConfig PostgreSql { get; set; } = new();
+        public DbConfig PostgreSql { get; set; } = new();
 
         /// <summary>
-        /// Параметры подключения к базе данных
+        /// Параметры подключения к MySql
         /// </summary>
-        public MySqlConfig MySql { get; set; } = new();
+        public DbConfig MySql { get; set; } = new();
     }
 }
