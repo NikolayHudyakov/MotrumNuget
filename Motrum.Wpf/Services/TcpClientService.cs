@@ -103,8 +103,9 @@ namespace Motrum.Wpf.Services
                 _startStopFlag = false;
 
                 _connectionStatusThread?.Join();
-                _receiveThread?.Join();
+                
                 _tcpClient?.Close();
+                _receiveThread?.Join();
 
                 Status?.Invoke(false);
                 _connected = false;

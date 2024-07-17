@@ -60,8 +60,9 @@ namespace Motrum.Wpf.Services
         /// <returns>Задача представляющая асинхронный запуск сервиса</returns>
         public async Task StartAsync(DataBaseConfig config)
         {
-            _serviceStarted = true;
             if (_serviceStarted) return;
+
+            _serviceStarted = true;
 
             switch (config.Dbms)
             {
@@ -102,6 +103,7 @@ namespace Motrum.Wpf.Services
         }
 
         private void InvokeStatus(bool status) => Status?.Invoke(status);
+
         private void InvokeError(string error) => Error?.Invoke(error);
     }
 }
