@@ -4,7 +4,6 @@ using NModbus;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using static Motrum.Wpf.Services.Intefaces.IModbusTcpAdapterService;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Motrum.Wpf.Services
 {
