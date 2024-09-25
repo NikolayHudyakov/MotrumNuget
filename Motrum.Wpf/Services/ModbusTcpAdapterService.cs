@@ -231,6 +231,7 @@ namespace Motrum.Wpf.Services
                 previousInputs ??= new bool[_numberOfDi];
                 leadingEdgeInputs ??= new bool[_numberOfDi];
                 trailingEdgeInputs ??= new bool[_numberOfDi];
+
                 try
                 {
                     inputs = _modbusMaster.ReadInputs(config.SlaveAddress, StartAddressDi, _numberOfDi);
@@ -239,34 +240,30 @@ namespace Motrum.Wpf.Services
                     {
                         leadingEdgeInputs[i] = false;
                         trailingEdgeInputs[i] = false;
-                        if (inputs![i] != previousInputs[i])
+                        if (inputs[i] != previousInputs[i])
                         {
-                            if (inputs![i])
+                            if (inputs[i])
                                 leadingEdgeInputs[i] = true;
                             else
                                 trailingEdgeInputs[i] = true;
                             changeFlag = true;
                         }
-                        previousInputs[i] = inputs![i];
+                        previousInputs[i] = inputs[i];
                     }
                     if (changeFlag)
                     {
                         ReadDi?.Invoke(leadingEdgeInputs, trailingEdgeInputs, (DateTime.Now - dateTime).TotalMilliseconds);
                         changeFlag = false;
                     }
+
+                    _writeSingleDoTask?.Wait();
+                    _writeMultipleDoTask?.Wait();
                 }
                 catch (Exception ex)
                 {
                     Error?.Invoke(ex.Message);
                     Thread.Sleep(ErrorTimeout);
                 }
-
-                try
-                {
-                    _writeSingleDoTask?.Wait();
-                    _writeMultipleDoTask?.Wait();
-                }
-                catch { }
             }
         }
 

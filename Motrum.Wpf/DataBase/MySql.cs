@@ -146,7 +146,7 @@ namespace Motrum.Wpf.DataBase
 
                 try
                 {
-                    _сonnection!.Open();
+                    _сonnection?.Open();
                 }
                 catch (Exception ex)
                 {
