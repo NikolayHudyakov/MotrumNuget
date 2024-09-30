@@ -319,7 +319,7 @@ namespace Motrum.Wpf.Services
         {
             const ushort NumberOfPoints = 1;
 
-            for (ushort currentInput = 0; true; currentInput++)
+            for (ushort currentInput = StartAddressDi; true; currentInput++)
             {
                 try
                 {
@@ -336,7 +336,7 @@ namespace Motrum.Wpf.Services
         {
             const ushort NumberOfPoints = 1;
 
-            for (ushort currentCoil = 0; true; currentCoil++)
+            for (ushort currentCoil = StartAddressDo; true; currentCoil++)
             {
                 try
                 {

@@ -34,6 +34,21 @@
         /// Период чтения скорости с модуля энкодера
         /// </summary>
         public int EncoderPollingPeriod { get; set; }
+    }
 
+    /// <summary>
+    /// Дискретные входы
+    /// </summary>
+    public enum DigitalInput : ushort
+    {
+        Di0, Di1, Di2, Di3, Di4, Di5, Di6, Di7, Di8, Di9, Di10, Di11, Di12, Di13, Di14, Di15
+    }
+
+    /// <summary>
+    /// Дискретные выходы
+    /// </summary>
+    public enum DigitalOutput : ushort
+    {
+        Do0, Do1, Do2, Do3, Do4, Do5, Do6, Do7, Do8, Do9, Do10, Do11, Do12, Do13, Do14, Do15
     }
 }
