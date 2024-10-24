@@ -97,10 +97,10 @@ namespace Motrum.Wpf.DataBase
                     _сonnection.ConnectionString =
                         $"""
                          Server = {config.Server};
-                         Port = {config.Port};
                          User Id = {config.User};
                          Password = {config.Password};
-                         Database = {config.DataBase}
+                         Database = {config.DataBase};
+                         TrustServerCertificate=True
                          """;
                 }
                 catch (Exception ex)
