@@ -15,6 +15,9 @@
         /// </summary>
         MySql,
 
-        //MsSql
+        /// <summary>
+        /// MsSql
+        /// </summary>
+        MsSql
     }
 }

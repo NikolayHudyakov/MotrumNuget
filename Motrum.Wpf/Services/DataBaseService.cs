@@ -80,6 +80,13 @@ namespace Motrum.Wpf.Services
                     await _database.StartAsync(config.MySql);
                     break;
 
+                case DbmsType.MsSql:
+                    _database = new MsSql();
+                    _database.Status += InvokeStatus;
+                    _database.Error += InvokeError;
+                    await _database.StartAsync(config.MsSql);
+                    break;
+
                 default:
                     throw new InvalidOperationException("СУБД не поддерживается");
             }

@@ -22,5 +22,10 @@ namespace Motrum.Wpf.Services.Config
         /// Параметры подключения к MySql
         /// </summary>
         public DbConfig MySql { get; set; } = new();
+
+        /// <summary>
+        /// Параметры подключения к MsSql
+        /// </summary>
+        public DbConfig MsSql { get; set; } = new();
     }
 }
