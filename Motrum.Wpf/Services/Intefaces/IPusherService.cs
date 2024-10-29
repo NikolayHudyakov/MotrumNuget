@@ -3,13 +3,13 @@
     /// <summary>
     /// Сервис для работы с отбраковщиком<br/>
     /// По умолчанию все обьекты отбраковки добавленные с помощью методами 
-    /// <see cref="RejectByDelayAsync"/> и <see cref="RejectByDistanceAsync"/>
+    /// <see cref="PushByDelayAsync"/> и <see cref="PushByDistanceAsync"/>
     /// будут вызывать callback функцию по истечении временной задержки или по пройденому расстоянию.
     /// Для того чтобы отменить вызов callback функции для конкретного обьекта отбраковки
     /// необходимо вызвать метод <see cref="UpdateAsync"/> 
     /// с указанием ID обьекта, который не должен быть отбракован
     /// </summary>
-    public interface IRejecterService
+    public interface IPusherService
     {
         /// <summary>
         /// Скорость (м/с)
@@ -25,7 +25,7 @@
         /// <param name="isEnable">Флаг работы отбраковщика</param>
         /// <param name="rejectCallBack">Callback функция</param>
         /// <returns>Задача представляющая асинхронный вызов callback функции</returns>
-        public Task RejectByDelayAsync(long id, int delay, bool isEnable, Action rejectCallBack);
+        public Task PushByDelayAsync(long id, int delay, bool isEnable, Action rejectCallBack);
 
         /// <summary>
         /// Асинхронно совершает вызов callback функции <paramref name="rejectCallBack"/> 
@@ -36,7 +36,7 @@
         /// <param name="isEnable">Флаг работы отбраковщика</param>
         /// <param name="rejectCallBack">Callback функция</param>
         /// <returns>Задача представляющая асинхронный вызов callback функции</returns>
-        public Task RejectByDistanceAsync(long id, double distance, bool isEnable, Action rejectCallBack);
+        public Task PushByDistanceAsync(long id, double distance, bool isEnable, Action rejectCallBack);
 
         /// <summary>
         /// Асинхронно отменяет вызов callback функции
