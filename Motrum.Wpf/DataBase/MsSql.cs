@@ -1,9 +1,8 @@
-﻿using Motrum.Wpf.DataBase.Config;
+﻿using Microsoft.Data.SqlClient;
+using Motrum.Wpf.DataBase.Config;
 using Motrum.Wpf.DataBase.Interfases;
 using System.Data;
 using System.Net.NetworkInformation;
-using Microsoft.Data.SqlClient;
-using System.Data.Common;
 
 namespace Motrum.Wpf.DataBase
 {
@@ -27,6 +26,31 @@ namespace Motrum.Wpf.DataBase
         public async Task StartAsync(DbConfig config) => await Task.Run(() => Start(config));
 
         public async Task StopAsync() => await Task.Run(Stop);
+
+        public void ExecuteTransaction(Func<bool> sqlRequestsCallback)
+        {
+            try
+            {
+                if (_сonnection == null)
+                    throw new Exception("Сервис не запущен");
+
+                lock (_lockObjExecuteReader)
+                {
+                    SqlTransaction transaction = _сonnection.BeginTransaction();
+
+                    bool isCommitRequired = sqlRequestsCallback.Invoke();
+
+                    if (isCommitRequired)
+                        transaction.Commit();
+                    else
+                        transaction.Rollback();
+                }
+            }
+            catch (Exception ex)
+            {
+                Error?.Invoke(ex.Message);
+            }
+        }
 
         public int ExecuteSqlRaw(string sql, params object?[] parameters)
         {
@@ -169,21 +193,6 @@ namespace Motrum.Wpf.DataBase
             {
                 return false;
             }
-        }
-
-        public int ExecuteSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters)
-        {
-            throw new NotImplementedException();
-        }
-
-        public DataTable FromSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters)
-        {
-            throw new NotImplementedException();
-        }
-
-        public DbTransaction? BeginTransaction()
-        {
-            throw new NotImplementedException();
         }
     }
 }

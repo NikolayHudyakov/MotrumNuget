@@ -46,22 +46,12 @@ namespace Tests
 
             Thread.Sleep(1000);
 
-            DbTransaction? transaction = db.BeginTransaction();
-            transaction?.Commit();
-
-            int response = db.ExecuteSqlRaw(null,
-                """
-                UPDATE sscc
-                SET used = true, dtime_used = NOW()
-                WHERE used = false AND code LIKE '%460123456%'
-                LIMIT 1;
-                """);
-
+           
             
 
             //transaction?.Rollback();
 
-            Console.WriteLine(response);
+           
 
 
             Console.ReadKey();

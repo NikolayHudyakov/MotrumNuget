@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Data.Common;
 
 namespace Motrum.Wpf.DataBase.Interfases
 {
@@ -27,10 +26,11 @@ namespace Motrum.Wpf.DataBase.Interfases
         public bool Connected { get; }
 
         /// <summary>
-        /// Начинает транзакцию и возвращает обьект транзакции
+        /// Выполняет транзакцию состоящую из SQL запросов определеных в callback функции <paramref name="sqlRequestsCallback"/><br/>
+        /// Результатом выполнения callback функции должно быть значение true - фиксация изменений или false - откат изменений
         /// </summary>
-        /// <returns></returns>
-        public DbTransaction? BeginTransaction();
+        /// <param name="sqlRequestsCallback"></param>
+        public void ExecuteTransaction(Func<bool> sqlRequestsCallback);
 
         /// <summary>
         /// Асинхронно запускает сервис
@@ -48,20 +48,18 @@ namespace Motrum.Wpf.DataBase.Interfases
         /// Выполняет заданный SQL для базы данных и 
         /// возвращает количество затронутых строк
         /// </summary>
-        /// <param name="transaction">Обьект транзакции</param>
         /// <param name="sql">Выполняемый SQL</param>
         /// <param name="parameters">Параметры для использования с SQL</param>
         /// <returns>Число обработанных строк</returns>
-        public int ExecuteSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters);
+        public int ExecuteSqlRaw(string sql, params object?[] parameters);
 
         /// <summary>
         /// Выполняет заданный SQL для базы данных и 
         /// возвращает данные согласно запросу
         /// </summary>
-        /// <param name="transaction">Обьект транзакции</param>
         /// <param name="sql">Выполняемый SQL</param>
         /// <param name="parameters">Параметры для использования с SQL</param>
         /// <returns>Данные соотетствующие запрсу</returns>
-        public DataTable FromSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters);
+        public DataTable FromSqlRaw(string sql, params object?[] parameters);
     }
 }
