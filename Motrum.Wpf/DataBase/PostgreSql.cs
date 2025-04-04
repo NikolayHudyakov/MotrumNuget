@@ -2,6 +2,7 @@
 using Motrum.Wpf.DataBase.Interfases;
 using Npgsql;
 using System.Data;
+using System.Data.Common;
 using System.Net.NetworkInformation;
 
 namespace Motrum.Wpf.DataBase
@@ -168,6 +169,21 @@ namespace Motrum.Wpf.DataBase
             {
                 return false;
             }
+        }
+
+        public int ExecuteSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DataTable FromSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DbTransaction? BeginTransaction()
+        {
+            throw new NotImplementedException();
         }
     }
 }

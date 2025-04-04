@@ -5,6 +5,8 @@ using Motrum.Wpf.DataBase.Interfases;
 using Motrum.Wpf.Services.Config;
 using Motrum.Wpf.Services.Intefaces;
 using System.Data;
+using System.Data.Common;
+using System.Transactions;
 
 namespace Motrum.Wpf.Services
 {
@@ -35,24 +37,35 @@ namespace Motrum.Wpf.Services
         public event Action<string>? Error;
 
         /// <summary>
+        /// Начинает транзакцию и возвращает обьект транзакции
+        /// </summary>
+        /// <returns></returns>
+        public DbTransaction? BeginTransaction()
+        {
+            return _database?.BeginTransaction();
+        }
+
+        /// <summary>
         /// Выполняет заданный SQL для базы данных и 
         /// возвращает количество затронутых строк
         /// </summary>
+        /// /// <param name="transaction">Обьект транзакции</param>
         /// <param name="sql">Выполняемый SQL</param>
         /// <param name="parameters">Параметры для использования с SQL</param>
         /// <returns>Число обработанных строк</returns>
-        public int ExecuteSqlRaw(string sql, params object?[] parameters) =>
-            _database != null ? _database.ExecuteSqlRaw(sql, parameters) : 0;
+        public int ExecuteSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters) =>
+            _database != null ? _database.ExecuteSqlRaw(transaction, sql, parameters) : 0;
 
         /// <summary>
         /// Выполняет заданный SQL для базы данных и 
         /// возвращает данные согласно запросу
         /// </summary>
+        /// /// <param name="transaction">Обьект транзакции</param>
         /// <param name="sql">Выполняемый SQL</param>
         /// <param name="parameters">Параметры для использования с SQL</param>
         /// <returns>Данные соотетствующие запрсу</returns>
-        public DataTable FromSqlRaw(string sql, params object?[] parameters) =>
-            _database != null ? _database.FromSqlRaw(sql, parameters) : new DataTable();
+        public DataTable FromSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters) =>
+            _database != null ? _database.FromSqlRaw(transaction, sql, parameters) : new DataTable();
 
         /// <summary>
         /// Асинхронно запускает сервис

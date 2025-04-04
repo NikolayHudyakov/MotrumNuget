@@ -2,7 +2,10 @@
 using Motrum.Wpf.DataBase.Interfases;
 using MySql.Data.MySqlClient;
 using System.Data;
+using System.Data.Common;
 using System.Net.NetworkInformation;
+using System.Transactions;
+using static Azure.Core.HttpHeader;
 
 namespace Motrum.Wpf.DataBase
 {
@@ -27,7 +30,23 @@ namespace Motrum.Wpf.DataBase
 
         public async Task StopAsync() => await Task.Run(Stop);
 
-        public int ExecuteSqlRaw(string sql, params object?[] parameters)
+        public DbTransaction? BeginTransaction()
+        {
+            try
+            {
+                if (_сonnection == null)
+                    throw new Exception("Сервис не запущен");
+
+                return _сonnection.BeginTransaction();
+            }
+            catch (Exception ex)
+            {
+                Error?.Invoke(ex.Message);
+                return null;
+            }
+        }
+
+        public int ExecuteSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters)
         {
             try
             {
@@ -37,6 +56,8 @@ namespace Motrum.Wpf.DataBase
                 lock (_lockObjExecuteReader)
                     using (MySqlCommand command = _сonnection.CreateCommand())
                     {
+                        command.Transaction = transaction as MySqlTransaction;
+
                         var paramNames = Enumerable.Range(0, parameters.Length).Select((i) => $"@{i}").ToArray();
 
                         command.CommandText = string.Format(sql, paramNames);
@@ -55,7 +76,7 @@ namespace Motrum.Wpf.DataBase
             }
         }
 
-        public DataTable FromSqlRaw(string sql, params object?[] parameters)
+        public DataTable FromSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters)
         {
             var data = new DataTable();
             try
@@ -66,6 +87,8 @@ namespace Motrum.Wpf.DataBase
                 lock (_lockObjExecuteReader)
                     using (MySqlCommand command = _сonnection.CreateCommand())
                     {
+                        command.Transaction = transaction as MySqlTransaction;
+
                         var paramNames = Enumerable.Range(0, parameters.Length).Select((i) => $"@{i}").ToArray();
 
                         command.CommandText = string.Format(sql, paramNames);

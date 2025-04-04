@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Data.Common;
 
 namespace Motrum.Wpf.DataBase.Interfases
 {
@@ -26,6 +27,12 @@ namespace Motrum.Wpf.DataBase.Interfases
         public bool Connected { get; }
 
         /// <summary>
+        /// Начинает транзакцию и возвращает обьект транзакции
+        /// </summary>
+        /// <returns></returns>
+        public DbTransaction? BeginTransaction();
+
+        /// <summary>
         /// Асинхронно запускает сервис
         /// </summary>
         /// <returns>Задача представляющая асинхронный запуск сервиса</returns>
@@ -41,18 +48,20 @@ namespace Motrum.Wpf.DataBase.Interfases
         /// Выполняет заданный SQL для базы данных и 
         /// возвращает количество затронутых строк
         /// </summary>
+        /// <param name="transaction">Обьект транзакции</param>
         /// <param name="sql">Выполняемый SQL</param>
         /// <param name="parameters">Параметры для использования с SQL</param>
         /// <returns>Число обработанных строк</returns>
-        public int ExecuteSqlRaw(string sql, params object?[] parameters);
+        public int ExecuteSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters);
 
         /// <summary>
         /// Выполняет заданный SQL для базы данных и 
         /// возвращает данные согласно запросу
         /// </summary>
+        /// <param name="transaction">Обьект транзакции</param>
         /// <param name="sql">Выполняемый SQL</param>
         /// <param name="parameters">Параметры для использования с SQL</param>
         /// <returns>Данные соотетствующие запрсу</returns>
-        public DataTable FromSqlRaw(string sql, params object?[] parameters);
+        public DataTable FromSqlRaw(DbTransaction? transaction, string sql, params object?[] parameters);
     }
 }

@@ -3,6 +3,7 @@ using Motrum.Wpf.DataBase.Enums;
 using Motrum.Wpf.Services;
 using Motrum.Wpf.Services.Config;
 using System.Data;
+using System.Data.Common;
 
 namespace Tests
 {
@@ -16,7 +17,7 @@ namespace Tests
 
             db.StartAsync(new DataBaseConfig
             {
-                Dbms = DbmsType.MsSql,
+                Dbms = DbmsType.MySql,
                 PostgreSql = new DbConfig
                 {
                     Server = "localhost",
@@ -32,17 +33,35 @@ namespace Tests
                     User = "sa",
                     Password = "1",
                     DataBase = "marking"
+                },
+                MySql = new DbConfig
+                {
+                    Server = "localhost",
+                    Port = "3306",
+                    User = "root",
+                    Password = "root",
+                    DataBase = "dm_code"
                 }
             }).Wait();
 
             Thread.Sleep(1000);
 
-            DataTable response = db.FromSqlRaw(
+            DbTransaction? transaction = db.BeginTransaction();
+            transaction?.Commit();
+
+            int response = db.ExecuteSqlRaw(null,
                 """
-                SELECT * FROM work_line_samara;
+                UPDATE sscc
+                SET used = true, dtime_used = NOW()
+                WHERE used = false AND code LIKE '%460123456%'
+                LIMIT 1;
                 """);
 
-            Console.WriteLine(response.Rows[0]["code"].ToString());
+            
+
+            //transaction?.Rollback();
+
+            Console.WriteLine(response);
 
 
             Console.ReadKey();
