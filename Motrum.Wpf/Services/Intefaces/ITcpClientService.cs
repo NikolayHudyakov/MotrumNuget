@@ -54,5 +54,12 @@ namespace Motrum.Wpf.Services.Intefaces
         /// <param name="data">Данные для отправки</param>
         /// <returns>Задача представляющая асинхронную отправку данных на TCP сервер</returns>
         public Task SendDataAsync(string data);
+
+        /// <summary>
+        /// Отправляет данные на TCP сервер
+        /// </summary>
+        /// <param name="data">Данные для отправки</param>
+        /// <returns>Задача представляющая асинхронную отправку данных на TCP сервер</returns>
+        public Task SendDataAsync(byte[] data);
     }
 }

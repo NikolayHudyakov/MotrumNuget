@@ -80,6 +80,27 @@ namespace Motrum.Wpf.Services
             }
         }
 
+        /// <summary>
+        /// Отправляет данные на TCP сервер
+        /// </summary>
+        /// <param name="data">Данные для отправки</param>
+        /// <returns>Задача представляющая асинхронную отправку данных на TCP сервер</returns>
+        public async Task SendDataAsync(byte[] data)
+        {
+            if (_config == null || !_connected || _networkStream == null)
+                return;
+
+            try
+            {
+                await _networkStream.WriteAsync(data).AsTask();
+            }
+            catch (Exception ex)
+            {
+                Error?.Invoke(ex.Message);
+                Thread.Sleep(ErrorTimeout);
+            }
+        }
+
         private void Start(TcpClientConfig config)
         {
             if (!_startStopFlag)
