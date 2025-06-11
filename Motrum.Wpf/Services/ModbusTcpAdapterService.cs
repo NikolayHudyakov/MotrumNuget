@@ -30,6 +30,7 @@ namespace Motrum.Wpf.Services
         private bool _connected;
         private ushort _numberOfDi;
         private ushort _numberOfDo;
+        private readonly object _lockObjStartStop = new();
 
         /// <summary>
         /// Настройки сервиса
@@ -135,42 +136,44 @@ namespace Motrum.Wpf.Services
 
         private void Start(ModbusTcpAdapterConfig config)
         {
-            if (!_startStopFlag)
-            {
-                _config = config;
+            lock(_lockObjStartStop)
+                if (!_startStopFlag)
+                {
+                    _config = config;
 
-                _startStopFlag = true;
+                    _startStopFlag = true;
 
-                _connectionStatusThread = new Thread(ConnectionStatusCycle);
-                _connectionStatusThread.Start(config);
+                    _connectionStatusThread = new Thread(ConnectionStatusCycle);
+                    _connectionStatusThread.Start(config);
 
-                _readDiThread = new Thread(ReadDiCycle);
-                _readDiThread.Start(config);
+                    _readDiThread = new Thread(ReadDiCycle);
+                    _readDiThread.Start(config);
 
-                _readEncoderThread = new Thread(ReadEncoderCycle);
-                _readEncoderThread.Start(config);
-            }
+                    _readEncoderThread = new Thread(ReadEncoderCycle);
+                    _readEncoderThread.Start(config);
+                }
         }
 
         private void Stop()
         {
-            if (_startStopFlag)
-            {
-                _startStopFlag = false;
+            lock(_lockObjStartStop)
+                if (_startStopFlag)
+                {
+                    _startStopFlag = false;
 
-                _writeSingleDoTask?.Wait();
-                _writeMultipleDoTask?.Wait();
-                _connectionStatusThread?.Join();
-                _readDiThread?.Join();
-                _readEncoderThread?.Join();
+                    _writeSingleDoTask?.Wait();
+                    _writeMultipleDoTask?.Wait();
+                    _connectionStatusThread?.Join();
+                    _readDiThread?.Join();
+                    _readEncoderThread?.Join();
 
-                WriteMultipleDoAsync(StartAddressDo, new bool[_numberOfDo]).Wait();
+                    WriteMultipleDoAsync(StartAddressDo, new bool[_numberOfDo]).Wait();
 
-                _tcpClient?.Close();
+                    _tcpClient?.Close();
 
-                Status?.Invoke(false);
-                _connected = false;
-            }
+                    Status?.Invoke(false);
+                    _connected = false;
+                }
         }
 
         private void ConnectionStatusCycle(object? obj)

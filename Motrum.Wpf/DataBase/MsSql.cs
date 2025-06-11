@@ -16,6 +16,7 @@ namespace Motrum.Wpf.DataBase
         private Thread? _connectionStatusThread;
         private SqlConnection? _сonnection;
         private readonly object _lockObjExecuteReader = new();
+        private readonly object _lockObjStartStop = new();
         private bool _connected;
 
         public bool Connected => _connected;
@@ -112,45 +113,47 @@ namespace Motrum.Wpf.DataBase
 
         private void Start(DbConfig config)
         {
-            if (!_startStopFlag)
-            {
-                _startStopFlag = true;
-                try
+            lock(_lockObjStartStop)
+                if (!_startStopFlag)
                 {
-                    _сonnection = new SqlConnection();
+                    _startStopFlag = true;
+                    try
+                    {
+                        _сonnection = new SqlConnection();
 
-                    _сonnection.ConnectionString =
-                        $"""
-                         Server = {config.Server};
-                         User Id = {config.User};
-                         Password = {config.Password};
-                         Database = {config.DataBase};
-                         TrustServerCertificate=True
-                         """;
-                }
-                catch (Exception ex)
-                {
-                    Error?.Invoke(ex.Message);
-                }
+                        _сonnection.ConnectionString =
+                            $"""
+                             Server = {config.Server};
+                             User Id = {config.User};
+                             Password = {config.Password};
+                             Database = {config.DataBase};
+                             TrustServerCertificate=True
+                             """;
+                    }
+                    catch (Exception ex)
+                    {
+                        Error?.Invoke(ex.Message);
+                    }
 
-                _connectionStatusThread = new Thread(ConnectionStatusCycle);
-                _connectionStatusThread.Start(config);
-            }
+                    _connectionStatusThread = new Thread(ConnectionStatusCycle);
+                    _connectionStatusThread.Start(config);
+                }
         }
 
         private void Stop()
         {
-            if (_startStopFlag)
-            {
-                _startStopFlag = false;
+            lock(_lockObjStartStop)
+                if (_startStopFlag)
+                {
+                    _startStopFlag = false;
 
-                _connectionStatusThread?.Join();
+                    _connectionStatusThread?.Join();
 
-                _сonnection?.Close();
-                _сonnection?.Dispose();
+                    _сonnection?.Close();
+                    _сonnection?.Dispose();
 
-                Status?.Invoke(false);
-            }
+                    Status?.Invoke(false);
+                }
         }
 
         private void ConnectionStatusCycle(object? obj)
