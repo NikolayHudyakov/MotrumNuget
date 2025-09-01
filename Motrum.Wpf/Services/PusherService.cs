@@ -46,17 +46,18 @@ namespace Motrum.Wpf.Services
         public double Velocity { get; set; }
 
         /// <summary>
-        /// Асинхронно совершает вызов callback функции <paramref name="pushCallBack"/> 
+        /// Асинхронно совершает вызов callback функции <paramref name="pushCallback"/> 
         /// по истечении времени указанного в параметре <paramref name="delay"/>
         /// </summary>
         /// <param name="id">ID обьекта</param>
         /// <param name="delay">Задержка</param>
         /// <param name="isEnable">Флаг работы отбраковщика</param>
-        /// <param name="pushCallBack">Callback функция</param>
+        /// <param name="pushCallback">Callback функция</param>
         /// <returns>Задача представляющая асинхронный вызов callback функции</returns>
-        public async Task PushByDelayAsync(long id, int delay, bool isEnable, Action pushCallBack)
+        public async Task PushByDelayAsync(long id, int delay, bool isEnable, PushCallback pushCallback)
         {
-            lock (_lockObject) _list.Add(new Item() { Id = id, Flag = RejecterMode, IsEnable = isEnable });
+            lock (_lockObject) 
+                _list.Add(new Item() { Id = id, Flag = RejecterMode, IsEnable = isEnable });
 
             await Task.Delay(delay);
 
@@ -64,22 +65,26 @@ namespace Motrum.Wpf.Services
             {
                 Item? item = _list.Find(item => item.Id == id);
 
-                if (item!.Flag && item.IsEnable) Task.Run(pushCallBack);
+                if (item == null)
+                    return;
+
+                if (item.Flag && item.IsEnable)
+                    pushCallback.Invoke(id);
 
                 _list.Remove(item);
             }
         }
 
         /// <summary>
-        /// Асинхронно совершает вызов callback функции <paramref name="pushCallBack"/> 
+        /// Асинхронно совершает вызов callback функции <paramref name="pushCallback"/> 
         /// по пройденому расстоянию указанному в параметре <paramref name="distance"/>
         /// </summary>
         /// <param name="id">ID обьекта</param>
         /// <param name="distance">Расстояние</param>
         /// <param name="isEnable">Флаг работы отбраковщика</param>
-        /// <param name="pushCallBack">Callback функция</param>
+        /// <param name="pushCallback">Callback функция</param>
         /// <returns>Задача представляющая асинхронный вызов callback функции</returns>
-        public async Task PushByDistanceAsync(long id, double distance, bool isEnable, Action pushCallBack)
+        public async Task PushByDistanceAsync(long id, double distance, bool isEnable, PushCallback pushCallback)
         {
             lock (_lockObject) _list.Add(new Item() { Id = id, Flag = RejecterMode, IsEnable = isEnable });
 
@@ -109,7 +114,11 @@ namespace Motrum.Wpf.Services
             {
                 Item? item = _list.Find(item => item.Id == id);
 
-                if (item!.Flag && item.IsEnable) Task.Run(pushCallBack);
+                if (item == null)
+                    return;
+
+                if (item.Flag && item.IsEnable)
+                    pushCallback.Invoke(id);
 
                 _list.Remove(item);
             }
@@ -134,10 +143,17 @@ namespace Motrum.Wpf.Services
                 {
                     Item? item = _list.Find(item => item.Id == id);
 
-                    if (item != null) item.Flag = !RejecterMode;
+                    if (item != null) 
+                        item.Flag = !RejecterMode;
                 }
             });
         }
+
+        /// <summary>
+        /// Проверяет находится ли обьект в очереди на сталкивание, после сталкивания обьект удаляется из очереди
+        /// </summary>
+        /// <param name="id">ID обьекта</param>
+        public bool Exist(long id) => _list.Exists(item => item.Id == id);
 
         private class Item
         {
