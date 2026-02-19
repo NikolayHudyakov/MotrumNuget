@@ -1,5 +1,6 @@
 ﻿using Motrum.Wpf.Services.Config;
 using Motrum.Wpf.Services.Intefaces;
+using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
@@ -28,6 +29,11 @@ namespace Motrum.Wpf.Services
         /// Статус подключения к TCP серверу
         /// </summary>
         public bool Connected => _connected;
+
+        /// <summary>
+        /// Размер буфера для приема данных от TCP сервера
+        /// </summary>
+        public int? ReceiveBufferSize { get; set; }
 
         /// <summary>
         /// Возникает один раз в секунду и указывает
@@ -175,6 +181,9 @@ namespace Motrum.Wpf.Services
                     Thread.Sleep(ErrorTimeout);
                     continue;
                 }
+
+                if (ReceiveBufferSize is int size)
+                    _tcpClient.ReceiveBufferSize = size;
 
                 data ??= new byte[_tcpClient.ReceiveBufferSize];
                 try

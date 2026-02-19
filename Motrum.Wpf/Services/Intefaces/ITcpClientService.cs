@@ -36,6 +36,11 @@ namespace Motrum.Wpf.Services.Intefaces
         public bool Connected { get; }
 
         /// <summary>
+        /// Размер буфера для приема данных от TCP сервера
+        /// </summary>
+        public int? ReceiveBufferSize { get; set; }
+
+        /// <summary>
         /// Асинхронно запускает сервис
         /// </summary>
         /// <param name="config">Настройки сервиса</param>
