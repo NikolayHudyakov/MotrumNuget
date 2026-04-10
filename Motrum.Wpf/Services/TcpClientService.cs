@@ -148,7 +148,7 @@ namespace Motrum.Wpf.Services
 
             while (_startStopFlag)
             {
-                if (_connected = GetConnectionStatus(_tcpClient, config.IPAddress))
+                if (_connected = GetConnectionStatus())
                 {
                     Status?.Invoke(true);
                     Thread.Sleep(ConnStatusTimeout);
@@ -203,17 +203,16 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private static bool GetConnectionStatus(TcpClient? client, string ipAddress)
+        private bool GetConnectionStatus()
         {
-            if (client == null)
+            if (_config == null)
                 return false;
 
             using Ping ping = new();
             try
             {
-                return ping.Send(ipAddress, PingTimeout).Status == IPStatus.Success &&
-                    !(client.Client.Poll(0, SelectMode.SelectRead) && client.Client.Available == 0) &&
-                    client.Connected;
+                return ping.Send(_config.IPAddress, PingTimeout).Status == IPStatus.Success &&
+                    _tcpClient != null && _tcpClient.Connected;
             }
             catch
             {
