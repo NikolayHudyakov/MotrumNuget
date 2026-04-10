@@ -1,5 +1,6 @@
 ﻿using Motrum.Wpf.Services.Config;
 using Motrum.Wpf.Services.Intefaces;
+using MySqlX.XDevAPI;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -146,7 +147,7 @@ namespace Motrum.Wpf.Services
 
             while (_startStopFlag)
             {
-                if (_connected = GetConnectionStatus(config))
+                if (_connected = GetConnectionStatus(_tcpClient))
                 {
                     Status?.Invoke(true);
                     Thread.Sleep(ConnStatusTimeout);
@@ -201,13 +202,15 @@ namespace Motrum.Wpf.Services
             }
         }
 
-        private bool GetConnectionStatus(TcpClientConfig config)
+        private static bool GetConnectionStatus(TcpClient? client)
         {
-            using Ping ping = new();
+            if (client == null)
+                return false;
+
             try
             {
-                return ping.Send(config.IPAddress, PingTimeout).Status == IPStatus.Success &&
-                    _tcpClient != null && _tcpClient.Connected;
+                return !client.Client.Poll(0, SelectMode.SelectRead)
+                       || client.Client.Available != 0;
             }
             catch
             {
