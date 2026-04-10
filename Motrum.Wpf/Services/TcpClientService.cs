@@ -1,6 +1,7 @@
 ﻿using Motrum.Wpf.Services.Config;
 using Motrum.Wpf.Services.Intefaces;
 using MySqlX.XDevAPI;
+using System.Net;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -207,9 +208,13 @@ namespace Motrum.Wpf.Services
             if (client == null)
                 return false;
 
+            using Ping ping = new();
+            var endPoint = (IPEndPoint)client.Client.RemoteEndPoint!;
+
             try
             {
-                return !(client.Client.Poll(0, SelectMode.SelectRead) && client.Client.Available == 0) &&
+                return ping.Send(endPoint.Address.ToString(), PingTimeout).Status == IPStatus.Success && 
+                    !(client.Client.Poll(0, SelectMode.SelectRead) && client.Client.Available == 0) &&
                     client.Connected;
             }
             catch
