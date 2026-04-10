@@ -209,8 +209,8 @@ namespace Motrum.Wpf.Services
 
             try
             {
-                return !client.Client.Poll(0, SelectMode.SelectRead)
-                       || client.Client.Available != 0;
+                return !(client.Client.Poll(0, SelectMode.SelectRead) && client.Client.Available == 0) &&
+                    client.Connected;
             }
             catch
             {
