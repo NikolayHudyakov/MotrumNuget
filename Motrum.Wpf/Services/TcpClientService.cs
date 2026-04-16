@@ -205,14 +205,14 @@ namespace Motrum.Wpf.Services
 
         private static bool GetConnectionStatus(TcpClient? client, string ipAddress)
         {
-            if (client?.Client == null)
+            if (client == null)
                 return false;
 
             using Ping ping = new();
             try
             {
-                return ping.Send(ipAddress, PingTimeout).Status == IPStatus.Success &&
-                    !(client.Client.Poll(0, SelectMode.SelectRead) && client.Client.Available == 0) &&
+                return ping.Send(ipAddress, PingTimeout).Status == IPStatus.Success && 
+                    client.Client != null && !(client.Client.Poll(0, SelectMode.SelectRead) && client.Client.Available == 0) &&
                     client.Connected;
             }
             catch
