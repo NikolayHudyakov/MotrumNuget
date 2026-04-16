@@ -205,7 +205,7 @@ namespace Motrum.Wpf.Services
 
         private static bool GetConnectionStatus(TcpClient? client, string ipAddress)
         {
-            if (client == null)
+            if (client?.Client == null)
                 return false;
 
             using Ping ping = new();
